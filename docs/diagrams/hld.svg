@@ -11,7 +11,7 @@
 
             <!-- Zones -->
             <rect x="16" y="20" width="500" height="560" rx="18" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.5"/>
-            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="48" font-family="IBM Plex Mono, monospace" font-size="12" letter-spacing="1.2" fill="#45577A">IPHONE · FORM APP (SWIFTUI)</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="48" font-family="IBM Plex Mono, monospace" font-size="12" letter-spacing="1.2" fill="#45577A">iPhone · Form app (SwiftUI)</text>
             <rect x="556" y="20" width="328" height="560" rx="18" fill="none" stroke="#2C4466" stroke-width="1.5"/>
             <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="572" y="48" font-family="IBM Plex Mono, monospace" font-size="12" letter-spacing="1.2" fill="#2C4466">SUPABASE PROJECT</text>
             <rect x="924" y="20" width="180" height="560" rx="18" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.5" stroke-dasharray="5 5"/>
