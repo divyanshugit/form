@@ -1,0 +1,19 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Helvetica Neue, Helvetica, Arial, sans-serif","fontSize":"15px","primaryColor":"#F6F2EA","primaryBorderColor":"#2C4466","primaryTextColor":"#16171A","lineColor":"#16171A","actorBkg":"#1C2B45","actorTextColor":"#F4EFE6","actorBorder":"#1C2B45","signalColor":"#16171A","signalTextColor":"#16171A","noteBkgColor":"#E6E4DD","noteBorderColor":"#D8CFBE","noteTextColor":"#16171A","sequenceNumberColor":"#F4EFE6","labelBoxBkgColor":"#E6E4DD","labelBoxBorderColor":"#2C4466","loopTextColor":"#16171A","labelTextColor":"#16171A"}}}%%
+sequenceDiagram
+  autonumber
+  participant You
+  participant C as CameraView
+  participant P as PhotoStore
+  participant D as Phone disk
+  participant ST as Storage form-photos
+  participant DB as Data API
+  C->>P: image(for: latest)
+  P-->>C: Ghost overlay at 30%
+  You->>C: Shutter (or import from library, EXIF date kept)
+  You->>C: Body weight, Save
+  C->>P: add(image, takenAt, workoutID, kg)
+  P->>D: JPEG, long edge 2000 px + pending.json
+  P-->>C: Visible in timeline now
+  P->>ST: Upload {uid}/{id}.jpg
+  P->>DB: Upsert photos row
+  Note over P,DB: File first, then row, so a row never points at a missing file

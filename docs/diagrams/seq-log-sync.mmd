@@ -1,0 +1,25 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Helvetica Neue, Helvetica, Arial, sans-serif","fontSize":"15px","primaryColor":"#F6F2EA","primaryBorderColor":"#2C4466","primaryTextColor":"#16171A","lineColor":"#16171A","actorBkg":"#1C2B45","actorTextColor":"#F4EFE6","actorBorder":"#1C2B45","signalColor":"#16171A","signalTextColor":"#16171A","noteBkgColor":"#E6E4DD","noteBorderColor":"#D8CFBE","noteTextColor":"#16171A","sequenceNumberColor":"#F4EFE6","labelBoxBkgColor":"#E6E4DD","labelBoxBorderColor":"#2C4466","loopTextColor":"#16171A","labelTextColor":"#16171A"}}}%%
+sequenceDiagram
+  autonumber
+  participant You
+  participant W as Workout screen
+  participant A as ActiveWorkout
+  participant D as Phone disk
+  participant S as WorkoutStore
+  participant API as Supabase Data API
+  You->>W: Tap SET DONE
+  W->>A: completeFocusedSet()
+  A->>D: Write active-workout.json
+  A-->>W: Next set + rest countdown
+  Note over You,D: Every set, no network needed. App killed? Relaunch reopens the draft.
+  You->>W: END → Save session
+  W->>S: finishActive()
+  S->>D: Append to pending-uploads.json, delete draft
+  S->>API: Upsert workouts, workout_exercises, sets
+  alt Online
+    API-->>S: 201 Created
+    S->>D: Remove from pending
+  else No signal
+    S-->>W: "Saved on your phone"
+    Note over S,API: Retried on app open and pull-to-refresh
+  end

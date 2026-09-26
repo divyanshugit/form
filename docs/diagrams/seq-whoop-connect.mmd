@@ -1,0 +1,21 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Helvetica Neue, Helvetica, Arial, sans-serif","fontSize":"15px","primaryColor":"#F6F2EA","primaryBorderColor":"#2C4466","primaryTextColor":"#16171A","lineColor":"#16171A","actorBkg":"#1C2B45","actorTextColor":"#F4EFE6","actorBorder":"#1C2B45","signalColor":"#16171A","signalTextColor":"#16171A","noteBkgColor":"#E6E4DD","noteBorderColor":"#D8CFBE","noteTextColor":"#16171A","sequenceNumberColor":"#F4EFE6","labelBoxBkgColor":"#E6E4DD","labelBoxBorderColor":"#2C4466","loopTextColor":"#16171A","labelTextColor":"#16171A"}}}%%
+sequenceDiagram
+  autonumber
+  participant You
+  participant App as WhoopStore
+  participant B as Browser sheet
+  participant WO as WHOOP OAuth
+  participant F as Edge fn whoop
+  participant T as whoop_connections
+  You->>App: Tap Connect
+  App->>B: Authorize URL (client_id, scopes, random state)
+  B->>WO: Log in + Allow
+  WO-->>App: stacked://whoop/callback?code&state
+  App->>App: Check state matches
+  App->>F: invoke exchange(code) with user JWT
+  F->>F: Verify JWT, redirect_uri allow-list
+  F->>WO: POST /oauth2/token (secret in body, Basic auth on invalid_client)
+  WO-->>F: access + refresh tokens
+  F->>T: Upsert tokens (service role)
+  F-->>App: connected
+  App->>App: refresh(): 30 days, then one-time history backfill

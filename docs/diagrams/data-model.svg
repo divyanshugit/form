@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" color="#16171A" viewBox="0 0 1000 520" role="img" aria-label="Data model. A workout has many workout_exercises; each workout exercise has many sets. Sets record weight, reps and duration_seconds for holds. A workout exercise points at the bundled exercise library by exercise_ref. A photo optionally points at a workout and names its file in the private storage bucket. WHOOP fields live on the workout row. whoop_connections holds tokens and is readable by the service role only.">
+          <defs>
+            <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">
+            <!-- workouts -->
+            <rect x="20" y="30" width="250" height="262" rx="10" fill="#FFFFFF" fill-opacity="0.6" stroke="currentColor" stroke-width="1.3"/>
+            <rect x="20" y="30" width="250" height="34" rx="10" fill="#1C2B45"/>
+            <rect x="20" y="52" width="250" height="12" fill="#1C2B45"/>
+            <text x="36" y="52" font-family="Hanken Grotesk, sans-serif" font-size="14" font-weight="700" fill="#F4EFE6">workouts</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="88">id  uuid · pk</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="110">name</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="132">started_at · ended_at</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="154">notes</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="176">routine_id → routines</text>
+            <line x1="32" y1="190" x2="258" y2="190" stroke="#E2632A" stroke-dasharray="3 3"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="210" fill="#E2632A">whoop_workout_id</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="232" fill="#E2632A">strain · avg_hr · max_hr</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="254" fill="#E2632A">kcal</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="278" font-size="10.5" fill="#45577A">WHOOP import: id = WHOOP uuid</text>
+
+            <!-- workout_exercises -->
+            <rect x="370" y="30" width="250" height="152" rx="10" fill="#FFFFFF" fill-opacity="0.6" stroke="currentColor" stroke-width="1.3"/>
+            <rect x="370" y="30" width="250" height="34" rx="10" fill="#1C2B45"/>
+            <rect x="370" y="52" width="250" height="12" fill="#1C2B45"/>
+            <text x="386" y="52" font-family="Hanken Grotesk, sans-serif" font-size="14" font-weight="700" fill="#F4EFE6">workout_exercises</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="386" y="88">id  uuid · pk</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="386" y="110">workout_id → workouts</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="386" y="132">exercise_ref  text</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="386" y="154">position · notes</text>
+
+            <!-- sets -->
+            <rect x="720" y="30" width="260" height="218" rx="10" fill="#FFFFFF" fill-opacity="0.6" stroke="currentColor" stroke-width="1.3"/>
+            <rect x="720" y="30" width="260" height="34" rx="10" fill="#1C2B45"/>
+            <rect x="720" y="52" width="260" height="12" fill="#1C2B45"/>
+            <text x="736" y="52" font-family="Hanken Grotesk, sans-serif" font-size="14" font-weight="700" fill="#F4EFE6">sets</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="736" y="88">id  uuid · pk</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="736" y="110">workout_exercise_id → …</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="736" y="132">position · kind</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="736" y="154" font-size="10.5" fill="#45577A">warmup | normal | drop | failure</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="736" y="176">weight_kg · reps</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="736" y="198">duration_seconds</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="736" y="220">completed_at</text>
+
+            <!-- relations -->
+            <line x1="270" y1="100" x2="368" y2="100" stroke="currentColor" stroke-width="1.3" marker-end="url(#b)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="300" y="92">1 : n</text>
+            <line x1="620" y1="100" x2="718" y2="100" stroke="currentColor" stroke-width="1.3" marker-end="url(#b)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="650" y="92">1 : n</text>
+
+            <!-- exercise library -->
+            <rect x="370" y="250" width="250" height="84" rx="10" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 4"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="386" y="276" font-family="Hanken Grotesk, sans-serif" font-size="14" font-weight="700">exercises.json (on phone)</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="386" y="298">id e.g. Barbell_Squat</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="386" y="320" font-size="10.5" fill="#45577A">549 free-exercise-db + 5 holds</text>
+            <line x1="495" y1="182" x2="495" y2="248" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#b)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="503" y="222">exercise_ref</text>
+
+            <!-- photos -->
+            <rect x="20" y="340" width="250" height="152" rx="10" fill="#FFFFFF" fill-opacity="0.6" stroke="currentColor" stroke-width="1.3"/>
+            <rect x="20" y="340" width="250" height="34" rx="10" fill="#1C2B45"/>
+            <rect x="20" y="362" width="250" height="12" fill="#1C2B45"/>
+            <text x="36" y="362" font-family="Hanken Grotesk, sans-serif" font-size="14" font-weight="700" fill="#F4EFE6">photos</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="398">id  uuid · pk</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="420">workout_id → workouts ?</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="442">storage_path · taken_at</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="464">body_weight_kg</text>
+            <line x1="145" y1="338" x2="145" y2="294" stroke="currentColor" stroke-width="1.3" marker-end="url(#b)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="153" y="322">0..1 session</text>
+
+            <!-- storage -->
+            <rect x="370" y="400" width="250" height="70" rx="10" fill="#FFFFFF" fill-opacity="0.6" stroke="#2C4466" stroke-width="1.3"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="386" y="426" font-family="Hanken Grotesk, sans-serif" font-size="14" font-weight="700">Storage object</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="386" y="450">form-photos/{uid}/{id}.jpg</text>
+            <line x1="270" y1="442" x2="368" y2="442" stroke="currentColor" stroke-width="1.3" marker-end="url(#b)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="282" y="434" font-size="10.5">storage_path</text>
+
+            <!-- whoop_connections -->
+            <rect x="720" y="300" width="260" height="92" rx="10" fill="#1C2B45"/>
+            <text x="736" y="326" font-family="Hanken Grotesk, sans-serif" font-size="14" font-weight="700" fill="#F4EFE6">whoop_connections</text>
+            <text x="736" y="350" fill="#C4CCD3">user_id · access_token</text>
+            <text x="736" y="372" fill="#C4CCD3">refresh_token · expires_at</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="736" y="420" font-size="10.5" fill="#45577A">view whoop_status exposes only</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="736" y="438" font-size="10.5" fill="#45577A">"connected" to the app</text>
+
+            <!-- planned -->
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="736" y="476" font-size="10.5" fill="#45577A">Also in schema, not used yet:</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="736" y="494" font-size="10.5" fill="#45577A">routines · journal_entries ·</text><text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="736" y="512" font-size="10.5" fill="#45577A">custom_exercises</text>
+          </g>
+        </svg>

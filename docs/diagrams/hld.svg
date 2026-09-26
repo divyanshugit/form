@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" color="#16171A" viewBox="0 0 1120 610" role="img" aria-label="High-level design. On the iPhone, SwiftUI screens read four observable stores. WorkoutStore and PhotoStore write to on-device files first. AuthModel exchanges an Apple token for a Supabase JWT. WorkoutStore upserts and selects rows through the Data API with row-level security. PhotoStore uploads JPEGs to the private form-photos bucket. WhoopStore invokes the whoop edge function, which keeps tokens in whoop_connections and calls WHOOP's OAuth and v2 API. WHOOP login happens in a browser sheet on the phone.">
+          <defs>
+            <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+            <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#E2632A"/>
+            </marker>
+          </defs>
+          <g font-family="Hanken Grotesk, -apple-system, sans-serif" fill="currentColor">
+
+            <!-- Zones -->
+            <rect x="16" y="20" width="500" height="560" rx="18" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.5"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="36" y="48" font-family="IBM Plex Mono, monospace" font-size="12" letter-spacing="1.2" fill="#45577A">IPHONE · FORM APP (SWIFTUI)</text>
+            <rect x="556" y="20" width="328" height="560" rx="18" fill="none" stroke="#2C4466" stroke-width="1.5"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="572" y="48" font-family="IBM Plex Mono, monospace" font-size="12" letter-spacing="1.2" fill="#2C4466">SUPABASE PROJECT</text>
+            <rect x="924" y="20" width="180" height="560" rx="18" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.5" stroke-dasharray="5 5"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="940" y="48" font-family="IBM Plex Mono, monospace" font-size="12" letter-spacing="1.2" fill="#45577A">OUTSIDE</text>
+
+            <!-- Screens -->
+            <rect x="36" y="68" width="460" height="46" rx="10" fill="#E6E4DD" stroke="none"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="52" y="96" font-size="14" font-weight="700">SwiftUI screens</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="180" y="96" font-size="13" fill="#45577A">Today · Workout · History · PRs · Photos · Quick log</text>
+            <line x1="324" y1="114" x2="324" y2="146" stroke="currentColor" stroke-width="1.3" marker-end="url(#a)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="332" y="136" font-family="IBM Plex Mono, monospace" font-size="11" fill="#45577A">state + actions</text>
+
+            <!-- Stores -->
+            <g>
+              <rect x="236" y="150" width="176" height="50" rx="10" fill="#FFFFFF" fill-opacity="0.6" stroke="currentColor" stroke-width="1.3"/>
+              <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="250" y="171" font-size="14" font-weight="700">AuthModel</text>
+              <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="250" y="189" font-size="11.5" fill="#45577A">Sign in with Apple</text>
+
+              <rect x="236" y="230" width="176" height="70" rx="10" fill="#FFFFFF" fill-opacity="0.6" stroke="currentColor" stroke-width="1.3"/>
+              <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="250" y="252" font-size="14" font-weight="700">WorkoutStore</text>
+              <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="250" y="270" font-size="11.5" fill="#45577A">ActiveWorkout · history</text>
+              <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="250" y="287" font-size="11.5" fill="#45577A">records cache · sync queue</text>
+
+              <rect x="236" y="330" width="176" height="56" rx="10" fill="#FFFFFF" fill-opacity="0.6" stroke="currentColor" stroke-width="1.3"/>
+              <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="250" y="352" font-size="14" font-weight="700">PhotoStore</text>
+              <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="250" y="370" font-size="11.5" fill="#45577A">save first · upload queue</text>
+
+              <rect x="236" y="420" width="176" height="56" rx="10" fill="#FFFFFF" fill-opacity="0.6" stroke="#E2632A" stroke-width="1.6"/>
+              <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="250" y="442" font-size="14" font-weight="700">WhoopStore</text>
+              <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="250" y="460" font-size="11.5" fill="#45577A">30 days · match · import</text>
+            </g>
+
+            <!-- On-device disk -->
+            <rect x="36" y="150" width="150" height="326" rx="10" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 4"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="50" y="174" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1" fill="#45577A">ON THIS PHONE</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="50" y="204" font-size="12.5" font-weight="600">active-workout.json</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="50" y="221" font-size="11" fill="#45577A">the set you're on</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="50" y="252" font-size="12" font-weight="600">pending-uploads.json</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="50" y="269" font-size="11" fill="#45577A">finished, not synced</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="50" y="300" font-size="12.5" font-weight="600">Photos/*.jpg</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="50" y="317" font-size="11" fill="#45577A">+ pending.json queue</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="50" y="348" font-size="12.5" font-weight="600">exercises.json</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="50" y="365" font-size="11" fill="#45577A">bundled, 554 lifts</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="50" y="396" font-size="12.5" font-weight="600">UserDefaults</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="50" y="413" font-size="11" fill="#45577A">WHOOP backfill done</text>
+
+            <line x1="236" y1="265" x2="188" y2="265" stroke="currentColor" stroke-width="1.3" marker-end="url(#a)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="192" y="258" font-family="IBM Plex Mono, monospace" font-size="10" fill="#45577A" text-anchor="start">writes</text>
+            <line x1="236" y1="358" x2="188" y2="358" stroke="currentColor" stroke-width="1.3" marker-end="url(#a)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="192" y="351" font-family="IBM Plex Mono, monospace" font-size="10" fill="#45577A">first</text>
+
+            <!-- Supabase services -->
+            <rect x="572" y="150" width="296" height="50" rx="10" fill="#FFFFFF" fill-opacity="0.6" stroke="#2C4466" stroke-width="1.3"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="588" y="171" font-size="14" font-weight="700">Auth</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="588" y="189" font-size="11.5" fill="#45577A">Apple provider → session JWT</text>
+
+            <rect x="572" y="230" width="296" height="70" rx="10" fill="#FFFFFF" fill-opacity="0.6" stroke="#2C4466" stroke-width="1.3"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="588" y="252" font-size="14" font-weight="700">Data API · schema <tspan font-family="IBM Plex Mono, monospace" font-size="13">form</tspan></text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="588" y="270" font-size="11.5" fill="#45577A">workouts · workout_exercises · sets · photos</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="588" y="287" font-size="11.5" fill="#45577A">RLS: auth.uid() = user_id on every row</text>
+
+            <rect x="572" y="330" width="296" height="56" rx="10" fill="#FFFFFF" fill-opacity="0.6" stroke="#2C4466" stroke-width="1.3"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="588" y="352" font-size="14" font-weight="700">Storage · form-photos</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="588" y="370" font-size="11.5" fill="#45577A">private bucket · {user_id}/{photo_id}.jpg</text>
+
+            <rect x="572" y="420" width="296" height="56" rx="10" fill="#FFFFFF" fill-opacity="0.6" stroke="#E2632A" stroke-width="1.6"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="588" y="442" font-size="14" font-weight="700">Edge Function · whoop</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="588" y="460" font-size="11.5" fill="#45577A">exchange · get (allow-list) · disconnect</text>
+
+            <rect x="572" y="506" width="296" height="50" rx="10" fill="#1C2B45" stroke="none"/>
+            <text x="588" y="527" font-size="14" font-weight="700" fill="#F4EFE6">whoop_connections</text>
+            <text x="588" y="545" font-size="11.5" fill="#C4CCD3">tokens · service role only, no client policy</text>
+            <line x1="720" y1="476" x2="720" y2="504" stroke="#E2632A" stroke-width="1.4" marker-end="url(#ao)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="728" y="495" font-family="IBM Plex Mono, monospace" font-size="10" fill="#45577A">read / refresh</text>
+
+            <!-- Phone → Supabase -->
+            <line x1="412" y1="175" x2="570" y2="175" stroke="currentColor" stroke-width="1.3" marker-end="url(#a)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="424" y="168" font-family="IBM Plex Mono, monospace" font-size="11" fill="#45577A">Apple id token</text>
+            <line x1="412" y1="258" x2="570" y2="258" stroke="currentColor" stroke-width="1.3" marker-end="url(#a)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="424" y="251" font-family="IBM Plex Mono, monospace" font-size="11" fill="#45577A">upsert (device UUIDs)</text>
+            <line x1="570" y1="280" x2="412" y2="280" stroke="currentColor" stroke-width="1.3" marker-end="url(#a)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="424" y="296" font-family="IBM Plex Mono, monospace" font-size="11" fill="#45577A">history + sets</text>
+            <line x1="412" y1="358" x2="570" y2="358" stroke="currentColor" stroke-width="1.3" marker-end="url(#a)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="424" y="351" font-family="IBM Plex Mono, monospace" font-size="11" fill="#45577A">jpeg, then row</text>
+            <line x1="412" y1="448" x2="570" y2="448" stroke="#E2632A" stroke-width="1.5" marker-end="url(#ao)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="424" y="441" font-family="IBM Plex Mono, monospace" font-size="11" fill="#E2632A">invoke + user JWT</text>
+
+            <!-- Outside -->
+            <rect x="940" y="150" width="148" height="50" rx="10" fill="#FFFFFF" fill-opacity="0.6" stroke="currentColor" stroke-width="1.3"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="954" y="171" font-size="14" font-weight="700">Apple ID</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="954" y="189" font-size="11.5" fill="#45577A">identity token</text>
+            <line x1="868" y1="175" x2="938" y2="175" stroke="currentColor" stroke-width="1.3" marker-end="url(#a)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="874" y="168" font-family="IBM Plex Mono, monospace" font-size="10" fill="#45577A">verify</text>
+
+            <rect x="940" y="420" width="148" height="136" rx="10" fill="#FFFFFF" fill-opacity="0.6" stroke="currentColor" stroke-width="1.3"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="954" y="442" font-size="14" font-weight="700">WHOOP</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="954" y="462" font-size="11.5" fill="#45577A">OAuth 2 server</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="954" y="480" font-size="11.5" fill="#45577A">API v2: recovery,</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="954" y="497" font-size="11.5" fill="#45577A">sleep, cycle,</text>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="954" y="514" font-size="11.5" fill="#45577A">activity/workout</text>
+            <line x1="868" y1="438" x2="938" y2="438" stroke="#E2632A" stroke-width="1.5" marker-end="url(#ao)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="874" y="431" font-family="IBM Plex Mono, monospace" font-size="10" fill="#45577A">secret</text>
+            <line x1="868" y1="462" x2="938" y2="462" stroke="#E2632A" stroke-width="1.5" marker-end="url(#ao)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="874" y="476" font-family="IBM Plex Mono, monospace" font-size="10" fill="#45577A">GET /v2</text>
+
+            <!-- Browser login -->
+            <polyline points="324,476 324,570 1014,570 1014,558" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#a)"/>
+            <text paint-order="stroke" stroke="#F6F2EA" stroke-width="4" stroke-linejoin="round" x="340" y="563" font-family="IBM Plex Mono, monospace" font-size="11" fill="#45577A">WHOOP login in a browser sheet → stacked://whoop/callback?code</text>
+          </g>
+        </svg>

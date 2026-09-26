@@ -1,0 +1,24 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Helvetica Neue, Helvetica, Arial, sans-serif","fontSize":"15px","primaryColor":"#F6F2EA","primaryBorderColor":"#2C4466","primaryTextColor":"#16171A","lineColor":"#16171A","actorBkg":"#1C2B45","actorTextColor":"#F4EFE6","actorBorder":"#1C2B45","signalColor":"#16171A","signalTextColor":"#16171A","noteBkgColor":"#E6E4DD","noteBorderColor":"#D8CFBE","noteTextColor":"#16171A","sequenceNumberColor":"#F4EFE6","labelBoxBkgColor":"#E6E4DD","labelBoxBorderColor":"#2C4466","loopTextColor":"#16171A","labelTextColor":"#16171A"}}}%%
+sequenceDiagram
+  autonumber
+  participant App as WhoopStore
+  participant F as Edge fn whoop
+  participant T as whoop_connections
+  participant API as WHOOP API v2
+  participant S as WorkoutStore
+  participant DB as Data API
+  App->>F: get /v2/recovery, /sleep, /cycle, /activity/workout (parallel)
+  F->>T: Read tokens
+  opt Expires within 60 s
+    F->>API: refresh_token grant
+    F->>T: Save new tokens
+  end
+  F->>API: GET, 25 per page, follow nextToken
+  API-->>F: Pages
+  F-->>App: JSON
+  App->>App: Build 30-day view (cycle + recovery + sleep)
+  App->>App: WhoopMatching.plan(history, workouts)
+  Note over App: Overlap ≥ 50% of the shorter span → attach. Otherwise import (id = WHOOP uuid). Pending scores wait.
+  App->>S: apply(plan)
+  S->>DB: Update strain / HR / kcal on matched sessions
+  S->>DB: Upsert imports (batches of 500), delete superseded imports
