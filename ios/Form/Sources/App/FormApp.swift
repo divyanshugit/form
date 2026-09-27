@@ -91,9 +91,9 @@ struct MainTabView: View {
             HistoryView()
                 .tag(1)
                 .tabItem { Label("History", systemImage: "calendar") }
-            RecordsView()
+            BodyView(showingWorkout: $showingWorkout)
                 .tag(2)
-                .tabItem { Label("PRs", systemImage: "trophy") }
+                .tabItem { Label("Body", systemImage: "figure.strengthtraining.traditional") }
             PhotosView()
                 .tag(3)
                 .tabItem { Label("Photos", systemImage: "camera") }
