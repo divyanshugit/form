@@ -75,14 +75,44 @@ async function saveTokens(userId: string, t: { access_token: string; refresh_tok
   if (error) throw error;
 }
 
+const fresh = (row: { expires_at: string }) => new Date(row.expires_at).getTime() - Date.now() > 60_000;
+
+// WHOOP refresh tokens are single-use: presenting one twice fails (and can revoke the chain).
+// So only one request may rotate it. A request claims the row with an optimistic update on
+// updated_at; the winner refreshes, everyone else waits for the new token and reuses it.
 async function accessToken(userId: string): Promise<string | null> {
-  const { data, error } = await admin.from("whoop_connections").select("*").eq("user_id", userId).maybeSingle();
-  if (error) throw error;
-  if (!data) return null;
-  if (new Date(data.expires_at).getTime() - Date.now() > 60_000) return data.access_token;
-  const refreshed = await tokenRequest({ grant_type: "refresh_token", refresh_token: data.refresh_token, scope: "offline" });
-  await saveTokens(userId, refreshed, data.refresh_token);
-  return refreshed.access_token;
+  const read = async () => {
+    const { data, error } = await admin.from("whoop_connections").select("*").eq("user_id", userId).maybeSingle();
+    if (error) throw error;
+    return data;
+  };
+
+  const row = await read();
+  if (!row) return null;
+  if (fresh(row)) return row.access_token;
+
+  const { data: claimed, error: claimError } = await admin
+    .from("whoop_connections")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("user_id", userId)
+    .eq("updated_at", row.updated_at)
+    .select("user_id");
+  if (claimError) throw claimError;
+
+  if (claimed && claimed.length === 1) {
+    const refreshed = await tokenRequest({ grant_type: "refresh_token", refresh_token: row.refresh_token, scope: "offline" });
+    await saveTokens(userId, refreshed, row.refresh_token);
+    return refreshed.access_token;
+  }
+
+  // Another request is rotating the token right now; wait for it (up to ~5 s).
+  for (let attempt = 0; attempt < 20; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    const latest = await read();
+    if (!latest) return null;
+    if (fresh(latest)) return latest.access_token;
+  }
+  throw new Error("WHOOP token refresh is taking too long");
 }
 
 Deno.serve(async (req) => {

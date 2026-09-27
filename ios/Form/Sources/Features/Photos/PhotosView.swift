@@ -45,9 +45,15 @@ struct PhotosView: View {
                         }
                     }
                     if photos.pendingCount > 0 {
-                        Label("\(photos.pendingCount) waiting to upload", systemImage: "icloud.and.arrow.up")
-                            .font(.footnote)
-                            .foregroundStyle(Palette.slateText)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Label("\(photos.pendingCount) waiting to upload. They're safe on this phone.",
+                                  systemImage: "icloud.and.arrow.up")
+                            if let reason = photos.uploadError {
+                                Text("Last attempt failed: \(reason)")
+                            }
+                        }
+                        .font(.footnote)
+                        .foregroundStyle(Palette.slateText)
                     }
                     if let message = photos.errorMessage {
                         Text(message).font(.footnote).foregroundStyle(Palette.slateText)

@@ -9,6 +9,8 @@ final class PhotoStore {
     /// Newest first.
     private(set) var photos: [ProgressPhoto] = []
     private(set) var pendingCount = 0
+    /// Why the last upload attempt failed, shown next to the queue count.
+    private(set) var uploadError: String?
     var errorMessage: String?
 
     private let repository: PhotoRepository
@@ -119,10 +121,21 @@ final class PhotoStore {
                 try await repository.upload(photo, jpeg: data)
                 setPending(pending().filter { $0.id != photo.id })
                 if let index = photos.firstIndex(where: { $0.id == photo.id }) { photos[index] = photo }
+                uploadError = nil
             } catch {
+                uploadError = Self.describe(error)
                 continue
             }
         }
+    }
+
+    /// Readable reason for a failed upload (storage and database errors carry a message).
+    static func describe(_ error: Error) -> String {
+        let text = String(describing: error)
+        if let range = text.range(of: "message: \""), let end = text[range.upperBound...].firstIndex(of: "\"") {
+            return String(text[range.upperBound..<end])
+        }
+        return error.localizedDescription
     }
 
     // MARK: Images

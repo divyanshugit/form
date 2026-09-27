@@ -21,6 +21,9 @@ final class WhoopStore {
     var errorMessage: String?
 
     private static let backfillKey = "whoop.historyImported"
+    /// The refresh in flight. WHOOP refresh tokens are single-use, so overlapping syncs
+    /// would each try to rotate the same token and all but one would fail.
+    @ObservationIgnored private var refreshTask: Task<Void, Never>?
     static let windowDays = 30
     /// Set after a successful connect so the next view refresh syncs immediately.
     var justConnected = false
@@ -76,7 +79,19 @@ final class WhoopStore {
     // MARK: Refresh
 
     /// Pulls recovery + sleep, then attaches WHOOP workouts to Form sessions and imports WHOOP-only ones.
+    /// Single-flight: a second caller waits for the refresh already running instead of starting another.
     func refresh(workouts: WorkoutStore) async {
+        if let running = refreshTask {
+            await running.value
+            return
+        }
+        let task = Task { await performRefresh(workouts: workouts) }
+        refreshTask = task
+        await task.value
+        refreshTask = nil
+    }
+
+    private func performRefresh(workouts: WorkoutStore) async {
         do {
             isConnected = try await client.isConnected()
         } catch {
@@ -85,11 +100,13 @@ final class WhoopStore {
         guard isConnected else { return }
         let since = Calendar.current.date(byAdding: .day, value: -Self.windowDays, to: .now)!
         do {
-            async let recoveryList = client.recoveries(since: since)
+            // One call first: if the access token has expired, this is the only request that
+            // rotates it. The parallel calls after it all reuse the fresh token.
+            let r = try await client.recoveries(since: since)
             async let sleepList = client.sleeps(since: since)
             async let cycleList = client.cycles(since: since)
             async let workoutList = client.workouts(since: since, maxRecords: 400)
-            let (r, sl, c, w) = try await (recoveryList, sleepList, cycleList, workoutList)
+            let (sl, c, w) = try await (sleepList, cycleList, workoutList)
 
             recovery = r.filter { $0.scoreState == .scored }.max { $0.createdAt < $1.createdAt }
             sleep = sl.filter { !$0.nap && $0.scoreState == .scored }.max { $0.end < $1.end }
