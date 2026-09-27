@@ -6,6 +6,7 @@ struct RecordsView: View {
     @Environment(WorkoutStore.self) private var store
     @State private var logging: Exercise?
     @State private var showingQuickLog = false
+    @State private var info: Exercise?
 
     static let benchmarkIDs = ["Dead_Hang", "Plank", "Pullups", "Pushups"]
 
@@ -30,14 +31,25 @@ struct RecordsView: View {
         .sorted { $0.exercise.name < $1.exercise.name }
     }
 
+    /// True when pushed inside another NavigationStack (the Body tab).
+    var embedded = false
+
     var body: some View {
-        NavigationStack {
+        if embedded {
+            content
+        } else {
+            NavigationStack { content }
+        }
+    }
+
+    private var content: some View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Benchmarks").labelStyle()
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
                         ForEach(benchmarks) { exercise in
-                            BenchmarkCard(exercise: exercise, trend: store.trend(for: exercise.id, metric: exercise.metric)) {
+                            BenchmarkCard(exercise: exercise, trend: store.trend(for: exercise.id, metric: exercise.metric),
+                                          onOpen: { info = exercise }) {
                                 logging = exercise
                             }
                         }
@@ -47,7 +59,10 @@ struct RecordsView: View {
                         Text("Holds & bodyweight").labelStyle().padding(.top, 8)
                         VStack(spacing: 0) {
                             ForEach(otherBodyweight, id: \.exercise.id) { item in
-                                recordRow(item.exercise.name, value: value(for: item.exercise.metric, best: item.best))
+                                Button { info = item.exercise } label: {
+                                    recordRow(item.exercise.name, value: value(for: item.exercise.metric, best: item.best))
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                         .padding(.horizontal, 16)
@@ -62,6 +77,7 @@ struct RecordsView: View {
                     } else {
                         VStack(spacing: 0) {
                             ForEach(liftRecords, id: \.exercise.id) { item in
+                                Button { info = item.exercise } label: {
                                 HStack(spacing: 12) {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(item.exercise.name).font(.headline).foregroundStyle(Palette.ink).lineLimit(1)
@@ -75,6 +91,9 @@ struct RecordsView: View {
                                     }
                                 }
                                 .padding(.vertical, 12)
+                                .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
                                 Divider().overlay(Palette.rule)
                             }
                         }
@@ -94,9 +113,9 @@ struct RecordsView: View {
                 }
             }
             .sheet(item: $logging) { QuickLogView(exercise: $0) }
+            .sheet(item: $info) { ExerciseInfoView(exercise: $0) }
             .sheet(isPresented: $showingQuickLog) { QuickLogView() }
             .refreshable { await store.refresh() }
-        }
     }
 
     private func value(for metric: ExerciseMetric, best: Records.Best) -> String {
@@ -124,6 +143,7 @@ struct RecordsView: View {
 struct BenchmarkCard: View {
     let exercise: Exercise
     let trend: [(date: Date, value: Double)]
+    var onOpen: (() -> Void)? = nil
     let onLog: () -> Void
 
     private func format(_ value: Double) -> String {
@@ -134,7 +154,31 @@ struct BenchmarkCard: View {
         let points = trend
         let best = points.map(\.value).max()
         VStack(alignment: .leading, spacing: 8) {
-            Text(exercise.name).labelStyle(Palette.ink)
+            Button { onOpen?() } label: { summary(points: points, best: best) }
+                .buttonStyle(.plain)
+                .disabled(onOpen == nil)
+                .accessibilityHint(onOpen == nil ? "" : "Shows progress and records")
+            Button("Log", systemImage: "plus", action: onLog)
+                .font(.subheadline.weight(.semibold))
+                .buttonStyle(.bordered)
+                .tint(Palette.denim)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+        .accessibilityElement(children: .contain)
+    }
+
+    private func summary(points: [(date: Date, value: Double)], best: Double?) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(exercise.name).labelStyle(Palette.ink)
+                Spacer()
+                if onOpen != nil {
+                    Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Palette.slateText)
+                }
+            }
             if let best {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(format(best)).font(.cast(34)).foregroundStyle(Palette.ink).minimumScaleFactor(0.6).lineLimit(1)
@@ -149,16 +193,9 @@ struct BenchmarkCard: View {
                 Text("–").font(.cast(34)).foregroundStyle(Palette.rule)
                 Text("No result yet").labelStyle()
             }
-            Button("Log", systemImage: "plus", action: onLog)
-                .font(.subheadline.weight(.semibold))
-                .buttonStyle(.bordered)
-                .tint(Palette.denim)
-                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .card()
-        .accessibilityElement(children: .contain)
+        .contentShape(Rectangle())
     }
 }
 

@@ -99,6 +99,56 @@ enum Records {
         return nil
     }
 
+    /// A dated record: the set that set it and when.
+    struct DatedRecord {
+        let value: Double
+        let set: SetRow
+        let date: Date
+    }
+
+    /// Everything the exercise screen shows about your history with one exercise.
+    struct ExerciseHistory {
+        var sessions = 0
+        var heaviest: DatedRecord?        // by weight
+        var bestOneRepMax: DatedRecord?   // by est. 1RM
+        var mostReps: DatedRecord?        // by reps
+        var longestHold: DatedRecord?     // by seconds
+        var lastSession: (date: Date, sets: [SetRow])?
+    }
+
+    /// Dated bests and the latest session for one exercise. Warmups are ignored; ties keep the earliest.
+    static func history(for exerciseRef: String, in history: [WorkoutRow]) -> ExerciseHistory {
+        var result = ExerciseHistory()
+        func consider(_ current: DatedRecord?, _ value: Double, _ set: SetRow, _ date: Date) -> DatedRecord? {
+            guard value > 0 else { return current }
+            guard let current else { return DatedRecord(value: value, set: set, date: date) }
+            if value > current.value || (value == current.value && date < current.date) {
+                return DatedRecord(value: value, set: set, date: date)
+            }
+            return current
+        }
+        for workout in history {
+            let sets = workout.sortedExercises
+                .filter { $0.exerciseRef == exerciseRef }
+                .flatMap(\.sortedSets)
+                .filter { $0.kind != .warmup }
+            guard !sets.isEmpty else { continue }
+            result.sessions += 1
+            if result.lastSession.map({ workout.startedAt > $0.date }) ?? true {
+                result.lastSession = (workout.startedAt, sets)
+            }
+            for set in sets {
+                let weight = set.weightKg ?? 0, reps = set.reps ?? 0
+                result.heaviest = consider(result.heaviest, weight, set, workout.startedAt)
+                result.bestOneRepMax = consider(result.bestOneRepMax,
+                                                PlateMath.estimatedOneRepMax(weight: weight, reps: reps), set, workout.startedAt)
+                result.mostReps = consider(result.mostReps, Double(reps), set, workout.startedAt)
+                result.longestHold = consider(result.longestHold, Double(set.durationSeconds ?? 0), set, workout.startedAt)
+            }
+        }
+        return result
+    }
+
     /// One point per session: the best effort in that session, in the exercise's own unit
     /// (seconds for holds, reps for bodyweight, est. 1RM kg for lifts). Oldest first.
     static func trend(for exerciseRef: String, metric: ExerciseMetric, in history: [WorkoutRow]) -> [(date: Date, value: Double)] {
