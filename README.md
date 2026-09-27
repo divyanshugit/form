@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/SwiftUI-%40Observable-2C4466?style=flat-square" alt="SwiftUI">
   <img src="https://img.shields.io/badge/Supabase-RLS-1C2B45?style=flat-square&logo=supabase&logoColor=3ECF8E" alt="Supabase">
   <img src="https://img.shields.io/badge/WHOOP-API%20v2-5C6D82?style=flat-square" alt="WHOOP API v2">
-  <img src="https://img.shields.io/badge/tests-43%20passing-2C4466?style=flat-square" alt="43 tests passing">
+  <img src="https://img.shields.io/badge/tests-52%20passing-2C4466?style=flat-square" alt="52 tests passing">
   <img src="https://img.shields.io/badge/offline-first-E2632A?style=flat-square" alt="Offline-first">
 </p>
 
@@ -76,6 +76,20 @@ Benchmarks for dead hang, plank, max pull-ups and max push-ups with trends, plus
 
 ### Offline-first
 The active workout is written to disk on every tap and survives the app being killed. Finished sessions and photos queue locally and upload when you're back online. Retries are idempotent, so nothing is ever duplicated.
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+### Your own exercises
+Missing a lift? Create it from the picker: name, what a set records (weight × reps, reps or a hold), equipment, muscle and a short description. It's saved on the phone first, then synced, and it works everywhere.
+
+</td>
+<td valign="top">
+
+### Know the lift
+Every exercise has a 2–3 line description in the picker. The ⓘ card adds the muscles worked, how-to steps, a demo image, and your best and last result.
 
 </td>
 </tr>
@@ -169,11 +183,11 @@ form/
 │   │   │   ├── Core/               design system, on-disk persistence
 │   │   │   ├── Models/             exercises, plate math, workouts, records, WHOOP, photos
 │   │   │   ├── Repositories/       Supabase + mock implementations
-│   │   │   └── Features/           Auth · Today · Workout · History · Records · Integrations · Photos
+│   │   │   └── Features/           Auth · Today · Workout · History · Records · Exercises · Integrations · Photos
 │   │   └── Resources/              exercises.json, app icon
-│   └── FormTests/                  43 unit tests
+│   └── FormTests/                  52 unit tests
 ├── supabase/
-│   ├── migrations/                 schema, RLS, storage, timed sets, photo weight
+│   ├── migrations/                 schema, RLS, storage, timed sets, photo weight, custom exercises
 │   └── functions/whoop/            WHOOP OAuth + API proxy
 ├── scripts/                        build_exercises.py, make_icon.py
 └── docs/                           architecture, diagrams, screenshots
@@ -186,7 +200,7 @@ cd ios && xcodebuild test -project Form.xcodeproj -scheme Form \
   -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
-The 43 tests cover plate math, the workout flow (focus, rest, holds, crash recovery), offline queues and sync, PRs per metric, WHOOP decoding and matching, and the photo pipeline.
+The 52 tests cover plate math, the workout flow (focus, rest, holds, crash recovery), offline queues and sync, PRs per metric, WHOOP decoding, matching and single-use token rotation, the photo pipeline, and custom exercises.
 
 ## Roadmap
 
@@ -194,6 +208,7 @@ The 43 tests cover plate math, the workout flow (focus, rest, holds, crash recov
 - [x] Timed holds, bodyweight reps, benchmarks and quick log
 - [x] WHOOP: recovery, 30-day trends, strain/HR per session, imports and backfill
 - [x] Progress photos: ghost camera, timeline, compare and collage
+- [x] Your own exercises, and a short description for every exercise
 - [ ] Journal: daily note, mood, energy and body weight, linked to the session and photo
 - [ ] Apple Health: heart-rate curve during sessions, and writing workouts to Health
 - [ ] Routines, and the rest timer as a Live Activity on the lock screen

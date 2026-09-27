@@ -77,6 +77,15 @@ erDiagram
   workouts ||--o{ workout_exercises : has
   workout_exercises ||--o{ sets : has
   workouts |o--o{ photos : "optional link"
+  custom_exercises {
+    uuid id PK
+    text name
+    text equipment
+    text primary_muscle
+    text_array secondary_muscles
+    text metric "weightReps | bodyweightReps | duration"
+    text description "2-3 lines, shown in the picker"
+  }
   workouts {
     uuid id PK "device-generated; WHOOP import = WHOOP uuid"
     text name
@@ -143,7 +152,9 @@ The exercise decides the metric, not the row (`ExerciseMetric` in `Models/Exerci
 **Other storage**
 
 - The exercise library is `ios/Form/Resources/exercises.json`: 549 exercises from free-exercise-db (public domain), plus 5 built-in holds. Rows store only `exercise_ref`.
-- Also in the schema but not used yet: `routines`, `routine_exercises`, `journal_entries`, `custom_exercises`.
+- Your own exercises live in `custom_exercises`, with a `metric` and a `description`. Their `exercise_ref` is `custom:<uuid>`. They're saved on the phone first (`custom-exercises.json`), pushed to Supabase, and registered with the in-memory library, so every screen sees them.
+- Every bundled exercise gets a 2–3 line description generated from its data: mechanic, main muscle, equipment, secondary muscles, and the first how-to step.
+- Also in the schema but not used yet: `routines`, `routine_exercises`, `journal_entries`.
 
 ---
 
@@ -238,13 +249,17 @@ sequenceDiagram
   participant API as WHOOP API v2
   participant S as WorkoutStore
   participant DB as Data API
-  App->>F: get /v2/recovery, /sleep, /cycle, /activity/workout (parallel)
+  Note over App: Single-flight: overlapping syncs wait for the one running
+  App->>F: get /v2/recovery (alone, first)
   F->>T: Read tokens
   opt Expires within 60 s
-    F->>API: refresh_token grant
+    F->>T: Claim row (update where updated_at matches)
+    F->>API: refresh_token grant (winner only)
     F->>T: Save new tokens
+    Note over F,T: Other requests wait and reuse the new token
   end
   F->>API: GET, 25 per page, follow nextToken
+  App->>F: get /sleep, /cycle, /activity/workout (parallel, fresh token)
   API-->>F: Pages
   F-->>App: JSON
   App->>App: Build 30-day view (cycle + recovery + sleep)
@@ -255,6 +270,14 @@ sequenceDiagram
   S->>DB: Upsert imports (batches of 500), delete superseded imports
 ```
 </details>
+
+**Token rotation.** WHOOP refresh tokens are single-use: presenting one twice fails with `400 invalid_request` and can revoke the chain. So three things guarantee exactly one rotation:
+
+1. `WhoopStore.refresh` is single-flight. Launch, foreground and pull-to-refresh share one running sync.
+2. Recovery is fetched alone first. If the access token has expired, that is the only request that refreshes it. The other three collections then run in parallel with the fresh token.
+3. The edge function claims the token row with an optimistic update on `updated_at`. Only the winner calls WHOOP's token endpoint; any other request waits (up to about 5 s) and reuses the new token.
+
+`WhoopRefreshTests` simulates single-use tokens: the old parallel code fails 3 of 4 requests, the fixed code none.
 
 **Matching rules** (`WhoopMatching.plan`, a pure function with unit tests):
 
@@ -310,6 +333,8 @@ sequenceDiagram
 | **WHOOP secret only on the server** | The client secret and tokens live in the edge function and a table with no client policy. Error details go to function logs, not the app. |
 | **Own `form` schema** | Form shares the Stacked project without table collisions. It must be listed under *Exposed schemas*. |
 | **Bundled exercise library** | No network is needed to search exercises. The exercise decides the metric (weight × reps, bodyweight reps, or hold). |
+| **Exactly one WHOOP token rotation** | Refresh tokens are single-use. The app syncs single-flight and fetches one collection first; the function claims the token row before refreshing. |
+| **Your exercises, local-first** | Custom exercises are saved on the phone, registered with the library, and synced like everything else. The exercise decides the metric, so a timed custom exercise gets the stopwatch. |
 | **Records cached in `WorkoutStore`** | After a WHOOP backfill, history can be thousands of rows. Bests and trends are computed once per history change, not on every redraw. |
 
 ---
@@ -324,9 +349,10 @@ sequenceDiagram
 | Workout | `Features/Workout/*`, `Models/PlateMath.swift`, `Models/Workout.swift` | Active session, loaded bar, holds, rest timer, finish, sync queue |
 | History & records | `Features/History/*`, `Features/Records/*`, `Models/Records.swift` | Weekly history, session editor, PRs, benchmarks, quick log |
 | WHOOP | `Features/Integrations/*`, `Repositories/WhoopClient.swift`, `Models/Whoop.swift`, `supabase/functions/whoop/index.ts` | OAuth, 30-day trends, matching, imports, backfill |
-| Photos | `Features/Photos/*`, `Repositories/PhotoRepository.swift`, `Models/ProgressPhoto.swift` | Ghost camera, timeline, compare, collage, upload queue |
+| Photos | `Features/Photos/*`, `Repositories/PhotoRepository.swift`, `Models/ProgressPhoto.swift` | Ghost camera, timeline, compare, collage, upload queue with failure reasons |
+| Exercises | `Features/Exercises/*`, `Repositories/CustomExerciseRepository.swift`, `Models/CustomExercise.swift` | Your own exercises, descriptions, exercise info card |
 | Database | `supabase/migrations/*.sql` | Schema, RLS, storage policies, hold time, photo weight |
-| Tests | `ios/FormTests/*` (43 tests) | Plate math, workout flow, offline sync, WHOOP matching, benchmarks, photos |
+| Tests | `ios/FormTests/*` (52 tests) | Plate math, workout flow, offline sync, WHOOP matching and token rotation, benchmarks, photos, custom exercises |
 
 Source paths are relative to `ios/Form/Sources/` unless they start with `supabase/` or `ios/`.
 
@@ -334,11 +360,12 @@ Source paths are relative to `ios/Form/Sources/` unless they start with `supabas
 
 ## 6. Operations
 
-**Migrations** (run in the Supabase SQL Editor, in order; the later two are safe to re-run):
+**Migrations** (run in the Supabase SQL Editor, in order; all but the first are safe to re-run):
 
 1. `20260926000000_form_schema.sql`: schema, tables, RLS, storage bucket
 2. `20260926010000_timed_sets.sql`: `sets.duration_seconds`
 3. `20260926020000_photos.sql`: `photos.body_weight_kg`, storage policies
+4. `20260927000000_custom_exercises.sql`: `custom_exercises.metric`, `custom_exercises.description`
 
 **Dashboard settings**
 

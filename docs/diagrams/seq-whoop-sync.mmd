@@ -7,13 +7,17 @@ sequenceDiagram
   participant API as WHOOP API v2
   participant S as WorkoutStore
   participant DB as Data API
-  App->>F: get /v2/recovery, /sleep, /cycle, /activity/workout (parallel)
+  Note over App: Single-flight: overlapping syncs wait for the one running
+  App->>F: get /v2/recovery (alone, first)
   F->>T: Read tokens
   opt Expires within 60 s
-    F->>API: refresh_token grant
+    F->>T: Claim row (update where updated_at matches)
+    F->>API: refresh_token grant (winner only)
     F->>T: Save new tokens
+    Note over F,T: Other requests wait and reuse the new token
   end
   F->>API: GET, 25 per page, follow nextToken
+  App->>F: get /sleep, /cycle, /activity/workout (parallel, fresh token)
   API-->>F: Pages
   F-->>App: JSON
   App->>App: Build 30-day view (cycle + recovery + sleep)
