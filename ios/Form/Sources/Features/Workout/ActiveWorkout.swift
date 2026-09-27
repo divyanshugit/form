@@ -82,6 +82,28 @@ final class ActiveWorkout: Identifiable {
         persist()
     }
 
+    /// Adds an exercise with a planned target (from a scanned board). Weights still come from last time;
+    /// reps, hold time and set count follow the plan when given.
+    func addExercise(_ exercise: Exercise, reps: Int?, seconds: Int?, sets setCount: Int?, note: String?) {
+        addExercise(exercise)
+        let index = draft.exercises.count - 1
+        var sets = draft.exercises[index].sets
+        if let setCount, setCount > 0 {
+            let template = sets.last ?? DraftSet(weight: 0, reps: 8)
+            if sets.count > setCount { sets.removeLast(sets.count - setCount) }
+            while sets.count < setCount {
+                sets.append(DraftSet(weight: template.weight, reps: template.reps, durationSeconds: template.durationSeconds))
+            }
+        }
+        for i in sets.indices {
+            if let reps, exercise.metric != .duration { sets[i].reps = reps }
+            if let seconds, exercise.metric == .duration { sets[i].durationSeconds = seconds }
+        }
+        draft.exercises[index].sets = sets
+        draft.exercises[index].notes = note
+        persist()
+    }
+
     func removeExercise(at index: Int) {
         guard draft.exercises.indices.contains(index) else { return }
         draft.exercises.remove(at: index)

@@ -6,6 +6,8 @@ struct TodayView: View {
     @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @Binding var showingWorkout: Bool
     @State private var showingQuickLog = false
+    @State private var scanning = false
+    @State private var startAfterScan = false
 
     var body: some View {
         NavigationStack {
@@ -156,6 +158,17 @@ struct TodayView: View {
             }
             .buttonStyle(PrimaryKeyStyle(height: 68))
             Button {
+                scanning = true
+            } label: {
+                Label("Scan a workout board", systemImage: "text.viewfinder")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .foregroundStyle(Palette.ink)
+                    .background(Palette.card, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Palette.rule, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            Button {
                 showingQuickLog = true
             } label: {
                 Label("Quick log a hang, plank or max reps", systemImage: "stopwatch")
@@ -167,6 +180,27 @@ struct TodayView: View {
         .padding(18)
         .card()
         .sheet(isPresented: $showingQuickLog) { QuickLogView() }
+        .sheet(isPresented: $scanning, onDismiss: {
+            // Open the workout only once the scan sheet is gone, so the cover can present.
+            if startAfterScan {
+                startAfterScan = false
+                showingWorkout = true
+            }
+        }) {
+            ScanBoardView(confirmTitle: { store.active == nil ? "Start workout · \($0)" : "Add \($0) to workout" }) { title, exercises in
+                let isNew = store.active == nil
+                if isNew { store.startWorkout() }
+                guard let active = store.active else { return }
+                if isNew, !title.isEmpty { active.rename(title) }
+                for item in exercises {
+                    active.addExercise(item.exercise, reps: item.reps, seconds: item.seconds, sets: item.sets, note: item.note)
+                }
+                startAfterScan = true
+            }
+        }
+        #if DEBUG
+        .task { if DemoMode.scanImagePath != nil { scanning = true } }
+        #endif
     }
 
     private func lastSession(_ workout: WorkoutRow) -> some View {

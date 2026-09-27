@@ -38,7 +38,7 @@ targets:
         CFBundleDisplayName: Form
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
-        NSCameraUsageDescription: Form uses the camera for your progress photos.
+        NSCameraUsageDescription: Form uses the camera for your progress photos and to scan workout boards.
         NSPhotoLibraryAddUsageDescription: Save progress photos and collages to your library.
         SUPABASE_HOST: $(SUPABASE_HOST)
         SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)

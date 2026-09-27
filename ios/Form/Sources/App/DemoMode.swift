@@ -15,6 +15,12 @@ enum DemoMode {
         guard let i = args.firstIndex(of: "-demoTab"), i + 1 < args.count else { return 0 }
         return Int(args[i + 1]) ?? 0
     }
+    /// `-demoScan /path/board.jpg` opens the board scanner on Today and reads that image.
+    static var scanImagePath: String? {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-demoScan"), i + 1 < args.count else { return nil }
+        return args[i + 1]
+    }
     /// `-demoExercise Plank` opens that exercise's detail sheet from the Body tab.
     static var exerciseID: String? {
         let args = ProcessInfo.processInfo.arguments

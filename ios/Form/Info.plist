@@ -21,7 +21,7 @@
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Form uses the camera for your progress photos.</string>
+	<string>Form uses the camera for your progress photos and to scan workout boards.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Save progress photos and collages to your library.</string>
 	<key>SUPABASE_ANON_KEY</key>
