@@ -1,34 +1,53 @@
 import Foundation
 
-/// Loads the bundled exercise list once and answers lookups and searches.
-final class ExerciseLibrary: Sendable {
+/// The exercise catalogue: bundled exercises (read once) plus your own, which can change at runtime.
+/// Lookups happen from any thread, so the custom list is lock-protected.
+final class ExerciseLibrary: @unchecked Sendable {
     static let shared = ExerciseLibrary()
 
-    let all: [Exercise]
-    private let byID: [String: Exercise]
+    let bundled: [Exercise]
+    private let bundledByID: [String: Exercise]
+    private let lock = NSLock()
+    private var customList: [Exercise] = []
+    private var customByID: [String: Exercise] = [:]
 
     init(bundle: Bundle = .main) {
         let list: [Exercise]
         if let url = bundle.url(forResource: "exercises", withExtension: "json"),
            let data = try? Data(contentsOf: url),
            let decoded = try? JSONDecoder().decode([Exercise].self, from: data) {
-            list = decoded + Exercise.extras.filter { extra in !decoded.contains { $0.id == extra.id } }
+            let ids = Set(decoded.map(\.id))
+            list = decoded + Exercise.extras.filter { !ids.contains($0.id) }
         } else {
             list = Exercise.extras
         }
-        all = list
-        byID = Dictionary(list.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        bundled = list
+        bundledByID = Dictionary(list.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     init(exercises: [Exercise]) {
-        all = exercises
-        byID = Dictionary(exercises.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        bundled = exercises
+        bundledByID = Dictionary(exercises.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
-    func exercise(_ id: String) -> Exercise? { byID[id] }
+    /// Your exercises first, then the bundled catalogue.
+    var all: [Exercise] { custom + bundled }
 
-    /// Unknown ids (e.g. custom exercises) count as weight × reps.
-    func metric(_ id: String) -> ExerciseMetric { byID[id]?.metric ?? .weightReps }
+    var custom: [Exercise] { lock.withLock { customList } }
+
+    func setCustom(_ exercises: [Exercise]) {
+        lock.withLock {
+            customList = exercises.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            customByID = Dictionary(exercises.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
+        }
+    }
+
+    func exercise(_ id: String) -> Exercise? {
+        bundledByID[id] ?? lock.withLock { customByID[id] }
+    }
+
+    /// Unknown ids count as weight × reps.
+    func metric(_ id: String) -> ExerciseMetric { exercise(id)?.metric ?? .weightReps }
 
     /// Every distinct primary muscle, for filter chips.
     var muscles: [String] {

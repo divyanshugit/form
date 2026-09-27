@@ -9,6 +9,7 @@ struct ActiveWorkoutView: View {
     @State private var showingPicker = false
     @State private var showingFinish = false
     @State private var confirmDiscard = false
+    @State private var info: Exercise?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -59,6 +60,7 @@ struct ActiveWorkoutView: View {
         } message: {
             Text("Nothing has been logged yet.")
         }
+        .sheet(item: $info) { ExerciseInfoView(exercise: $0) }
         .sensoryFeedback(.success, trigger: workout.draft.completedSets.count)
         .sensoryFeedback(.warning, trigger: workout.restFinishedCount)
     }
@@ -114,11 +116,24 @@ struct ActiveWorkoutView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("\(String(format: "%02d", focus.exercise + 1)) / \(String(format: "%02d", workout.draft.exercises.count)) · \(info?.primaryMuscle ?? "")")
                 .labelStyle()
-            Text(info?.name ?? exercise.exerciseRef)
-                .font(.title.weight(.heavy))
-                .foregroundStyle(Palette.ink)
-                .lineLimit(2)
-                .minimumScaleFactor(0.7)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(info?.name ?? exercise.exerciseRef)
+                    .font(.title.weight(.heavy))
+                    .foregroundStyle(Palette.ink)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
+                if let info {
+                    Button {
+                        self.info = info
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .font(.title3)
+                            .foregroundStyle(Palette.denim)
+                            .frame(width: 44, height: 44)
+                    }
+                    .accessibilityLabel("About \(info.name)")
+                }
+            }
         }
 
         let metric = info?.metric ?? .weightReps

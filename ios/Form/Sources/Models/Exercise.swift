@@ -10,13 +10,61 @@ struct Exercise: Codable, Identifiable, Hashable, Sendable {
     let mechanic: String?
     let instructions: [String]
     let images: [String]
+    /// Your own words, for exercises you create.
+    var about: String? = nil
+    /// Set on your own exercises; bundled ones derive their metric.
+    var metricOverride: ExerciseMetric? = nil
 
     var kind: EquipmentKind { EquipmentKind(equipment) }
 
+    var isCustom: Bool { id.hasPrefix(Exercise.customPrefix) }
+    static let customPrefix = "custom:"
+
     /// What a set of this exercise records.
     var metric: ExerciseMetric {
+        if let metricOverride { return metricOverride }
         if ExerciseMetric.timedIDs.contains(id) { return .duration }
         return kind == .bodyweight ? .bodyweightReps : .weightReps
+    }
+
+    /// Two or three lines on what the exercise is: yours if you wrote one, otherwise built from the data.
+    var summary: String {
+        if let about, !about.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return about }
+        var lines: [String] = []
+
+        let muscle = primaryMuscles.first ?? "full-body"
+        let noun = metric == .duration ? "hold" : "exercise"
+        let style: String? = switch mechanic {
+        case "compound": "compound"
+        case "isolation": "isolation"
+        default: nil
+        }
+        let words = [style, muscle, noun].compactMap { $0 }.joined(separator: " ")
+        let article = "aeiou".contains(words.first ?? "x") ? "An" : "A"
+        let tool: String = switch equipment {
+        case "barbell": " with a barbell"
+        case "dumbbell": " with dumbbells"
+        case "kettlebell": " with a kettlebell"
+        case "ez bar": " with an EZ bar"
+        case "cable": " on a cable stack"
+        case "machine": " on a machine"
+        case "bands": " with a resistance band"
+        case "bodyweight": " using your bodyweight"
+        default: ""
+        }
+        lines.append("\(article) \(words)\(tool).")
+
+        if !secondaryMuscles.isEmpty {
+            let list = ListFormatter.localizedString(byJoining: secondaryMuscles)
+            lines.append("Also works your \(list).")
+        }
+
+        if let first = instructions.first {
+            let sentence = first.split(separator: ".", maxSplits: 1).first.map(String.init) ?? first
+            let trimmed = sentence.trimmingCharacters(in: .whitespaces)
+            if !trimmed.isEmpty { lines.append(trimmed.count > 140 ? String(trimmed.prefix(137)) + "…" : trimmed + ".") }
+        }
+        return lines.joined(separator: " ")
     }
 
     var primaryMuscle: String { primaryMuscles.first?.capitalized ?? "" }

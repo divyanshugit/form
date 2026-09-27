@@ -3,12 +3,16 @@ import SwiftUI
 struct ExercisePickerView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(WorkoutStore.self) private var store
+    @Environment(CustomExerciseStore.self) private var custom
     let onPick: (Exercise) -> Void
 
     @State private var query = ""
     @State private var muscle: String?
+    @State private var showingNew = false
+    @State private var info: Exercise?
 
     private var results: [Exercise] {
+        _ = custom.rows.count // re-run when your exercises change
         let found = store.library.search(query, muscle: muscle)
         // Exercises you've done before float to the top.
         let done = Set(store.history.flatMap { $0.sortedExercises.map(\.exerciseRef) })
@@ -32,27 +36,61 @@ struct ExercisePickerView: View {
                     .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                     .listRowBackground(Color.clear)
                 }
+                if results.isEmpty || !query.isEmpty {
+                    Section {
+                        Button {
+                            showingNew = true
+                        } label: {
+                            Label(query.isEmpty ? "Create an exercise" : "Create \u{201C}\(query)\u{201D}",
+                                  systemImage: "plus.square.dashed")
+                                .font(.headline)
+                                .frame(minHeight: 44)
+                        }
+                        .listRowBackground(Palette.card)
+                    }
+                }
                 Section {
                     ForEach(results) { exercise in
-                        Button {
-                            onPick(exercise)
-                            dismiss()
-                        } label: {
-                            HStack(spacing: 12) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(exercise.name).foregroundStyle(Palette.ink)
-                                    Text([exercise.primaryMuscle, exercise.equipment?.capitalized]
-                                        .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
+                        HStack(alignment: .top, spacing: 12) {
+                            Button {
+                                onPick(exercise)
+                                dismiss()
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack(spacing: 6) {
+                                        Text(exercise.name).font(.headline).foregroundStyle(Palette.ink)
+                                        if exercise.isCustom {
+                                            Text("YOURS")
+                                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                                .padding(.horizontal, 5).padding(.vertical, 2)
+                                                .foregroundStyle(Palette.inkFixed)
+                                                .background(Palette.orange, in: RoundedRectangle(cornerRadius: 4))
+                                        }
+                                    }
+                                    Text(exercise.summary)
                                         .font(.footnote)
                                         .foregroundStyle(Palette.slateText)
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.leading)
                                 }
-                                Spacer()
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.title3)
-                                    .foregroundStyle(Palette.orange)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
                             }
-                            .frame(minHeight: 44)
+                            .buttonStyle(.plain)
+                            .accessibilityHint("Adds this exercise to the session")
+
+                            Button {
+                                info = exercise
+                            } label: {
+                                Image(systemName: "info.circle")
+                                    .font(.title3)
+                                    .foregroundStyle(Palette.denim)
+                                    .frame(width: 44, height: 44)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("About \(exercise.name)")
                         }
+                        .padding(.vertical, 4)
                         .listRowBackground(Palette.card)
                     }
                 }
@@ -66,7 +104,17 @@ struct ExercisePickerView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("New") { showingNew = true }
+                }
             }
+            .sheet(isPresented: $showingNew) {
+                NewExerciseView(prefilledName: query) { created in
+                    onPick(created)
+                    dismiss()
+                }
+            }
+            .sheet(item: $info) { ExerciseInfoView(exercise: $0) }
         }
     }
 

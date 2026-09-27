@@ -4,6 +4,15 @@ import SwiftUI
 struct FormApp: App {
     @State private var auth = AuthModel()
     @State private var whoop = WhoopStore()
+    @State private var customExercises: CustomExerciseStore = {
+        #if DEBUG
+        if DemoMode.isOn {
+            return CustomExerciseStore(repository: MockCustomExerciseRepository(),
+                                       directory: FileManager.default.temporaryDirectory.appendingPathComponent("form-demo-custom"))
+        }
+        #endif
+        return CustomExerciseStore()
+    }()
     @State private var photos: PhotoStore = {
         #if DEBUG
         if DemoMode.isOn { return DemoMode.makePhotoStore() }
@@ -24,6 +33,7 @@ struct FormApp: App {
                 .environment(store)
                 .environment(whoop)
                 .environment(photos)
+                .environment(customExercises)
                 .tint(Palette.denim)
                 .task {
                     #if DEBUG
@@ -62,6 +72,7 @@ struct MainTabView: View {
     @Environment(WorkoutStore.self) private var store
     @Environment(WhoopStore.self) private var whoop
     @Environment(PhotoStore.self) private var photos
+    @Environment(CustomExerciseStore.self) private var customExercises
     @Environment(\.scenePhase) private var scenePhase
     @State private var showingWorkout = false
     @State private var tab: Int = {
@@ -98,6 +109,7 @@ struct MainTabView: View {
             ActiveWorkoutView(workout: active)
         }
         .task {
+            await customExercises.refresh()
             await store.refresh()
             #if DEBUG
             DemoMode.prepareWorkout(in: store)
@@ -118,6 +130,7 @@ struct MainTabView: View {
             if DemoMode.isOn { return }
             #endif
             Task {
+                await customExercises.sync()
                 await store.refresh()
                 await photos.sync()
                 await whoop.refresh(workouts: store)
