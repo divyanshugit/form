@@ -19,6 +19,10 @@
 </p>
 
 <p align="center">
+  <a href="https://dvynsh.org/blog/how-much-can-you-vibe.html">Read the blog post</a>
+</p>
+
+<p align="center">
   <img src="docs/assets/showcase.png" alt="Today, the loaded bar, Records and a progress collage" width="100%">
 </p>
 
