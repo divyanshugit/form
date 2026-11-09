@@ -3,13 +3,18 @@ import SwiftUI
 struct TodayView: View {
     @Environment(WorkoutStore.self) private var store
     @Environment(WhoopStore.self) private var whoop
+    @Environment(MetricsStore.self) private var metrics
+    @Environment(PhotoStore.self) private var photos
     @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @Binding var showingWorkout: Bool
     @State private var showingQuickLog = false
     @State private var scanning = false
     @State private var startAfterScan = false
+    @State private var celebrating: Milestones.Status?
+    @State private var scannedBoard: UIImage?
 
     var body: some View {
+        let snapshot = ProgressSnapshot(store: store, metrics: metrics, photos: photos)
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -24,6 +29,13 @@ struct TodayView: View {
                     } else {
                         recoveryCard
                     }
+                    if Calendar.current.component(.weekday, from: .now) == 1 {
+                        NavigationLink { WeeklyReviewView() } label: { sundayPrompt(snapshot) }
+                            .buttonStyle(.plain)
+                    }
+                    TodayPlanCard(snapshot: snapshot, showingWorkout: $showingWorkout, onScan: { scanning = true })
+                    NavigationLink { SinceDayOneView() } label: { PhaseCard(snapshot: snapshot) }
+                        .buttonStyle(.plain)
                     sessionCard
                     YearGrid(trainedDays: store.trainedDays)
                     if let last = store.history.first {
@@ -42,7 +54,30 @@ struct TodayView: View {
                 await whoop.refresh(workouts: store)
             }
             .toolbar(.hidden, for: .navigationBar)
+            .task(id: snapshot.achievedCount) {
+                guard !store.history.isEmpty, !store.isLoading else { return }
+                if let status = Celebrations.pending(snapshot.milestones) { celebrating = status }
+            }
+            .fullScreenCover(item: $celebrating, onDismiss: {}) { status in
+                MilestoneUnlockedView(status: status, dayNumber: snapshot.dayNumber, since: snapshot.since)
+                    .onAppear { Celebrations.markSeen(status.id) }
+            }
         }
+    }
+
+    private func sundayPrompt(_ snapshot: ProgressSnapshot) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: "checklist").font(.title2).foregroundStyle(Palette.inkFixed)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Your week is ready").font(.headline).foregroundStyle(Palette.inkFixed)
+                Text("\(snapshot.week.daysTrained) days · \(snapshot.week.prs) PRs. Review it and share the card.")
+                    .font(.subheadline).foregroundStyle(Palette.inkFixed.opacity(0.8))
+            }
+            Spacer()
+            Image(systemName: "chevron.right").foregroundStyle(Palette.inkFixed)
+        }
+        .padding(18)
+        .background(Palette.orange, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     private var header: some View {
@@ -192,11 +227,12 @@ struct TodayView: View {
                 if isNew { store.startWorkout() }
                 guard let active = store.active else { return }
                 if isNew, !title.isEmpty { active.rename(title) }
+                if let scannedBoard { BoardPhotos.save(scannedBoard, for: active.draft.id) }
                 for item in exercises {
                     active.addExercise(item.exercise, reps: item.reps, seconds: item.seconds, sets: item.sets, note: item.note)
                 }
                 startAfterScan = true
-            }
+            } onImage: { scannedBoard = $0 }
         }
         #if DEBUG
         .task { if DemoMode.scanImagePath != nil { scanning = true } }

@@ -228,7 +228,7 @@ struct ExerciseInfoView: View {
                             .font(.caption.monospaced())
                             .padding(.horizontal, 9)
                             .frame(minHeight: 28)
-                            .foregroundStyle(r == selected ? Palette.chalk : Palette.slateText)
+                            .foregroundStyle(r == selected ? Palette.bone : Palette.slateText)
                             .background(r == selected ? Palette.ink : .clear, in: RoundedRectangle(cornerRadius: 8))
                             .accessibilityAddTraits(r == selected ? .isSelected : [])
                     }
@@ -253,7 +253,7 @@ struct ExerciseInfoView: View {
                 }
                 .chartYScale(domain: .automatic(includesZero: false))
                 .chartXAxis {
-                    AxisMarks(values: .automatic(desiredCount: 3)) { _ in
+                    AxisMarks(preset: .aligned, values: .automatic(desiredCount: 3)) { _ in
                         AxisValueLabel(format: .dateTime.month(.abbreviated).day())
                     }
                 }
