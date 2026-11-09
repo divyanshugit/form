@@ -56,10 +56,15 @@ struct WorkoutRow: Codable, Identifiable, Sendable {
     var avgHr: Int?
     var maxHr: Int?
     var kcal: Int?
+    /// WHOOP milliseconds in heart-rate zones 0–5.
+    var zoneMs: [Int]? = nil
+    var distanceM: Double? = nil
     var workoutExercises: [WorkoutExerciseRow]?
 
     enum CodingKeys: String, CodingKey {
         case id, name, notes, strain, kcal
+        case zoneMs = "zone_ms"
+        case distanceM = "distance_m"
         case startedAt = "started_at"
         case endedAt = "ended_at"
         case whoopWorkoutId = "whoop_workout_id"
@@ -183,9 +188,12 @@ enum SetFormat {
 
     /// One set, in the exercise's own terms: "82.5 × 8", "12 reps", "+10 kg × 6", "1:05".
     static func describe(weight: Double, reps: Int, duration: Int?, metric: ExerciseMetric) -> String {
+        // A backfilled set whose board gave no rep count: it happened, the numbers weren't written down.
+        if metric != .duration, weight == 0, reps == 0 { return "done" }
         switch metric {
         case .weightReps:
-            return "\(weight.kg) × \(reps)"
+            // Backfilled sets start at 0 kg until a weight is filled in.
+            return weight > 0 ? "\(weight.kg) × \(reps)" : "\(reps) reps"
         case .bodyweightReps:
             return weight > 0 ? "+\(weight.kg) kg × \(reps)" : "\(reps) reps"
         case .duration:

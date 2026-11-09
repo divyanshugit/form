@@ -21,6 +21,8 @@ struct WhoopFields: Encodable, Sendable {
     let avg_hr: Int
     let max_hr: Int
     let kcal: Int?
+    let zone_ms: [Int]?
+    let distance_m: Double?
 
     init?(_ whoop: WhoopWorkout) {
         guard let score = whoop.score else { return nil }
@@ -29,6 +31,8 @@ struct WhoopFields: Encodable, Sendable {
         avg_hr = score.averageHeartRate
         max_hr = score.maxHeartRate
         kcal = whoop.kcal
+        zone_ms = whoop.zoneMs
+        distance_m = whoop.distanceM
     }
 }
 

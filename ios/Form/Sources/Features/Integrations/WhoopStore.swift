@@ -20,7 +20,7 @@ final class WhoopStore {
     private(set) var historyStatus: String?
     var errorMessage: String?
 
-    private static let backfillKey = "whoop.historyImported"
+    private static let backfillKey = "whoop.historyImported.v2" // v2: zones + distance
     /// The refresh in flight. WHOOP refresh tokens are single-use, so overlapping syncs
     /// would each try to rotate the same token and all but one would fail.
     @ObservationIgnored private var refreshTask: Task<Void, Never>?

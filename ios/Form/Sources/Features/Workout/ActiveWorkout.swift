@@ -104,6 +104,16 @@ final class ActiveWorkout: Identifiable {
         persist()
     }
 
+    /// Adds a program slot with its progression target: set count, reps or hold, and the suggested weight.
+    func addPlanned(_ exercise: Exercise, sets setCount: Int, target: Program.Target, note: String?) {
+        addExercise(exercise, reps: target.reps > 0 ? target.reps : nil, seconds: target.seconds, sets: setCount, note: note)
+        let index = draft.exercises.count - 1
+        if exercise.metric != .duration, target.weight > 0 {
+            for i in draft.exercises[index].sets.indices { draft.exercises[index].sets[i].weight = target.weight }
+        }
+        persist()
+    }
+
     func removeExercise(at index: Int) {
         guard draft.exercises.indices.contains(index) else { return }
         draft.exercises.remove(at: index)
