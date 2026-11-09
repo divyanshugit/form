@@ -13,8 +13,10 @@ enum ZoneColors {
 enum CardMetrics {
     /// Drawn at 1080 × 1920 points and rendered at scale 1: an Instagram story.
     static let size = CGSize(width: 1080, height: 1920)
-    /// Margins around the content.
-    static let insets = EdgeInsets(top: 120, leading: 76, bottom: 76, trailing: 76)
+    /// Margins around the content. Top and bottom clear the strips Instagram's own controls cover on a story.
+    static let insets = EdgeInsets(top: 270, leading: 76, bottom: 360, trailing: 76)
+    /// Space between the last piece of content and the footer.
+    static let footerGap: CGFloat = 40
 }
 
 extension View {
@@ -109,6 +111,10 @@ private struct CardThemeKey: EnvironmentKey {
     static let defaultValue = CardTheme.whoop
 }
 
+private struct FooterAlignmentKey: EnvironmentKey {
+    static let defaultValue = Alignment.leading
+}
+
 private struct PlainBackgroundKey: EnvironmentKey {
     static let defaultValue = PlainBackground.washGrid
 }
@@ -117,6 +123,12 @@ extension EnvironmentValues {
     var cardTheme: CardTheme {
         get { self[CardThemeKey.self] }
         set { self[CardThemeKey.self] = newValue }
+    }
+
+    /// Where the footer sits: with the content on the left by default.
+    var footerAlignment: Alignment {
+        get { self[FooterAlignmentKey.self] }
+        set { self[FooterAlignmentKey.self] = newValue }
     }
 
     /// The background for cards without a photo.

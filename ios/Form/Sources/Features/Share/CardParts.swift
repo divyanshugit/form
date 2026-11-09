@@ -128,16 +128,35 @@ struct CardStatRow: View {
 }
 
 /// "form · day 43", bottom right.
+/// The app icon's bumper plate, flat, in the card's colours.
+struct FormMark: View {
+    @Environment(\.cardTheme) private var theme
+    var size: CGFloat = 34
+
+    var body: some View {
+        ZStack {
+            Circle().fill(theme.accent)
+            Circle().stroke(theme.bg.opacity(0.35), lineWidth: size * 0.04).padding(size * 0.12)
+            Circle().fill(theme.text).frame(width: size * 0.42)
+            Circle().fill(theme.bg).frame(width: size * 0.18)
+        }
+        .frame(width: size, height: size)
+    }
+}
+
+/// The signature: the Form mark and "form · day 43".
 struct CardFooter: View {
     @Environment(\.cardTheme) private var theme
+    @Environment(\.footerAlignment) private var alignment
     let text: String
     var font: CardFont
 
     var body: some View {
-        HStack {
-            Spacer()
-            Text(text).font(font.caps(22)).tracking(3).textCase(.uppercase).foregroundStyle(theme.tertiary)
+        HStack(spacing: 16) {
+            FormMark()
+            Text(text).font(font.caps(22)).tracking(4).textCase(.uppercase).foregroundStyle(theme.secondary)
         }
+        .frame(maxWidth: .infinity, alignment: alignment)
     }
 }
 

@@ -36,7 +36,7 @@ struct DialCard: View {
                 .frame(height: 920)
                 Spacer(minLength: 0)
                 CardStatRow(stats: section.cardStats, font: font)
-                CardFooter(text: model.footer, font: font).padding(.top, 36)
+                CardFooter(text: model.footer, font: font).padding(.top, CardMetrics.footerGap)
             }
             .padding(CardMetrics.insets)
             .legible(onPhoto: background != nil)

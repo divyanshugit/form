@@ -48,7 +48,7 @@ struct LedgerCard: View {
             StoryBackground(image: background)
             VStack(alignment: .leading, spacing: 0) {
                 CardEyebrow(section: section, font: font)
-                Spacer(minLength: 0)
+                Spacer(minLength: 36)
                 if let highlight {
                     HStack(spacing: 12) {
                         Circle().fill(theme.accent).frame(width: 12, height: 12)
@@ -94,7 +94,7 @@ struct LedgerCard: View {
                 } else if !section.lines.isEmpty {
                     lifts.padding(.top, 26)
                 }
-                CardFooter(text: model.footer, font: font).padding(.top, 26)
+                CardFooter(text: model.footer, font: font).padding(.top, CardMetrics.footerGap)
             }
             .padding(CardMetrics.insets)
             .legible(onPhoto: onPhoto)

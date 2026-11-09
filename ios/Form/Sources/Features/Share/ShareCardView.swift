@@ -115,7 +115,7 @@ struct ShareCardView: View {
                 .padding(.top, 36)
             }
 
-            footer.padding(.top, 44)
+            footer.padding(.top, CardMetrics.footerGap)
         }
         .padding(.top, CardMetrics.insets.top)
         .padding(.bottom, CardMetrics.insets.bottom)
@@ -190,8 +190,8 @@ struct ShareCardView: View {
             }
             footer
         }
-        .padding(.top, model.sections.count >= 3 ? 120 : 150)
-        .padding(.bottom, model.sections.count >= 3 ? 64 : 80)
+        .padding(.top, CardMetrics.insets.top)
+        .padding(.bottom, CardMetrics.insets.bottom)
     }
 
     /// Long weeks list sessions compactly; a recap draws every section in full.
