@@ -32,6 +32,8 @@ targets:
       path: Form/Form.entitlements
       properties:
         com.apple.developer.applesignin: [Default]
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
     info:
       path: Form/Info.plist
       properties:
@@ -40,6 +42,8 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSCameraUsageDescription: Form uses the camera for your progress photos and to scan workout boards.
         NSPhotoLibraryAddUsageDescription: Save progress photos and collages to your library.
+        UIAppFonts: [Anton-Regular.ttf, Unbounded-Medium.ttf, Unbounded-ExtraBold.ttf, InstrumentSerif-Regular.ttf, InstrumentSerif-Italic.ttf, SpaceGrotesk-Medium.ttf, SpaceGrotesk-Bold.ttf, JetBrainsMono-Medium.ttf, JetBrainsMono-Bold.ttf, Raleway-Regular.ttf, Raleway-Medium.ttf, Raleway-Bold.ttf, Raleway-Italic.ttf]
+        NSHealthShareUsageDescription: Form reads the heart rate WHOOP saves to Apple Health to draw the heart-rate curve on your share cards.
         SUPABASE_HOST: $(SUPABASE_HOST)
         SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
     settings:

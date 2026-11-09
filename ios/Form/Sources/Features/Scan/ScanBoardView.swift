@@ -22,6 +22,12 @@ struct ScanBoardView: View {
     let confirmTitle: (Int) -> String
     /// Receives the board's title and the chosen exercises, just before the sheet dismisses.
     let onConfirm: (_ title: String, _ exercises: [ScannedExercise]) -> Void
+    /// A photo to read straight away (bulk import), skipping the camera/picker step.
+    var initialImage: UIImage? = nil
+    /// Context shown above the review, e.g. "Board 3 of 27 · Tue 4 Nov · Functional Fitness".
+    var subtitle: String? = nil
+    /// Receives the photo being read, so the caller can keep it with the session.
+    var onImage: ((UIImage) -> Void)? = nil
 
     @State private var phase: Phase = .choose
     @State private var rows: [ReviewRow] = []
@@ -81,9 +87,12 @@ struct ScanBoardView: View {
                     photo = nil
                 }
             }
+            .task {
+                if phase == .choose, let initialImage { await read(initialImage) }
+            }
             #if DEBUG
             .task {
-                if phase == .choose, let path = DemoMode.scanImagePath, let image = UIImage(contentsOfFile: path) {
+                if phase == .choose, initialImage == nil, let path = DemoMode.scanImagePath, let image = UIImage(contentsOfFile: path) {
                     await read(image)
                 }
             }
@@ -161,6 +170,7 @@ struct ScanBoardView: View {
     // MARK: Reading
 
     private func read(_ image: UIImage) async {
+        onImage?(image)
         phase = .reading
         do {
             let lines = try await TextRecognizer.lines(in: image)
@@ -172,8 +182,12 @@ struct ScanBoardView: View {
             let matcher = ExerciseMatcher(exercises: store.library.all, remembered: BoardMemory.load())
             rows = plan.lines.map { line in
                 let best = matcher.best(for: line.name)
+                // "40 Weighted Wallsit" on a board means 40 seconds when the move is a hold.
+                let isHold = best?.exercise.metric == .duration
                 return ReviewRow(line: line, exercise: best?.exercise, score: best?.score,
-                                 sets: line.sets ?? 3, reps: line.reps, seconds: line.seconds)
+                                 sets: line.sets ?? 3,
+                                 reps: isHold ? nil : line.reps,
+                                 seconds: isHold ? (line.seconds ?? line.reps) : line.seconds)
             }
             title = plan.title ?? ""
             phase = .review
@@ -202,6 +216,12 @@ struct ScanBoardView: View {
 
     private var review: some View {
         List {
+            if let subtitle {
+                Text(subtitle)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Palette.slateText)
+                    .listRowBackground(Color.clear)
+            }
             Section {
                 TextField("Workout name", text: $title)
                     .font(.headline)
@@ -294,8 +314,17 @@ struct ScanBoardView: View {
     private func target(_ row: ReviewRow) -> String {
         var parts = ["\(row.sets) sets"]
         if let seconds = row.seconds { parts.append("\(seconds)s") }
-        if let reps = row.reps { parts.append(row.line.perSide ? "\(reps)/side" : "\(reps) reps") }
-        return parts.joined(separator: " × ")
+        if let reps = row.reps {
+            let count = row.line.repsMax.map { "\(reps)–\($0)" } ?? "\(reps)"
+            parts.append(row.line.perSide ? "\(count)/side" : "\(count) reps")
+        } else if row.seconds != nil, row.line.perSide {
+            parts.append("each side")
+        }
+        var text = parts.joined(separator: " × ")
+        if let tempo = row.line.note?.components(separatedBy: " · ").first(where: { $0.hasPrefix("tempo") }) {
+            text += " · " + tempo
+        }
+        return text
     }
 
     private var startBar: some View {
@@ -322,7 +351,8 @@ struct ScanBoardView: View {
                                         uniquingKeysWith: { first, _ in first }))
         let exercises = chosen.compactMap { row -> ScannedExercise? in
             guard let exercise = row.exercise else { return nil }
-            let note = [row.line.block, row.line.perSide ? "each side" : nil].compactMap { $0 }.joined(separator: " · ")
+            let note = [row.line.block, row.line.perSide ? "each side" : nil, row.line.note]
+                .compactMap { $0 }.joined(separator: " · ")
             return ScannedExercise(exercise: exercise, sets: row.sets, reps: row.reps, seconds: row.seconds,
                                    note: note.isEmpty ? nil : note)
         }

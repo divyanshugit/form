@@ -22,12 +22,30 @@
 	<string>1</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Form uses the camera for your progress photos and to scan workout boards.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Form reads the heart rate WHOOP saves to Apple Health to draw the heart-rate curve on your share cards.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Save progress photos and collages to your library.</string>
 	<key>SUPABASE_ANON_KEY</key>
 	<string>$(SUPABASE_ANON_KEY)</string>
 	<key>SUPABASE_HOST</key>
 	<string>$(SUPABASE_HOST)</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Anton-Regular.ttf</string>
+		<string>Unbounded-Medium.ttf</string>
+		<string>Unbounded-ExtraBold.ttf</string>
+		<string>InstrumentSerif-Regular.ttf</string>
+		<string>InstrumentSerif-Italic.ttf</string>
+		<string>SpaceGrotesk-Medium.ttf</string>
+		<string>SpaceGrotesk-Bold.ttf</string>
+		<string>JetBrainsMono-Medium.ttf</string>
+		<string>JetBrainsMono-Bold.ttf</string>
+		<string>Raleway-Regular.ttf</string>
+		<string>Raleway-Medium.ttf</string>
+		<string>Raleway-Bold.ttf</string>
+		<string>Raleway-Italic.ttf</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

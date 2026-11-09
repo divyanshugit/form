@@ -106,6 +106,18 @@ enum DemoMode {
         }
     }
 
+    static func sampleMetrics() -> [MetricRow] {
+        let weights = [70.5, 70.8, 70.4, 70.9, 71.0, 70.7, 71.2, 71.1, 70.9, 71.3, 71.4, 71.2, 71.6, 71.5]
+        var rows = weights.enumerated().map { index, kg in
+            MetricRow(recordedAt: Date(timeIntervalSinceNow: -Double(weights.count - index) * 2 * 86_400),
+                      kind: MetricKind.weight, value: kg)
+        }
+        rows.append(MetricRow(recordedAt: Date(timeIntervalSinceNow: -20 * 86_400), kind: MetricKind.waist, value: 79))
+        rows.append(MetricRow(recordedAt: Date(timeIntervalSinceNow: -2 * 86_400), kind: MetricKind.waist, value: 78.5))
+        rows.append(MetricRow(recordedAt: Date(timeIntervalSinceNow: -6 * 86_400), kind: TestKind.deadHang.metric, value: 60))
+        return rows
+    }
+
     private static func sampleHistory() -> [WorkoutRow] {
         let plan: [(String, [(String, Double, Int)], Double)] = [
             ("Push day", [("Barbell_Bench_Press_-_Medium_Grip", 80, 8), ("Incline_Dumbbell_Press", 28, 10)], 3),

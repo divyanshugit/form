@@ -135,7 +135,7 @@ struct BodyPartHubView: View {
                 .font(.subheadline.weight(.semibold))
                 .padding(.horizontal, 14)
                 .frame(minHeight: 36)
-                .foregroundStyle(selected ? Palette.chalk : Palette.ink)
+                .foregroundStyle(selected ? Palette.bone : Palette.ink)
                 .background(selected ? Palette.ink : Palette.card, in: Capsule())
                 .overlay(Capsule().strokeBorder(Palette.rule, lineWidth: selected ? 0 : 1))
         }

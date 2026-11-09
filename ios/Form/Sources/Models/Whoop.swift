@@ -98,11 +98,26 @@ struct WhoopSleep: Decodable, Sendable {
 }
 
 struct WhoopWorkout: Decodable, Identifiable, Sendable {
+    struct Zones: Decodable, Sendable {
+        let zoneZeroMilli: Int?
+        let zoneOneMilli: Int?
+        let zoneTwoMilli: Int?
+        let zoneThreeMilli: Int?
+        let zoneFourMilli: Int?
+        let zoneFiveMilli: Int?
+
+        /// Milliseconds in zones 0–5.
+        var milliseconds: [Int] {
+            [zoneZeroMilli, zoneOneMilli, zoneTwoMilli, zoneThreeMilli, zoneFourMilli, zoneFiveMilli].map { $0 ?? 0 }
+        }
+    }
     struct Score: Decodable, Sendable {
         let strain: Double
         let averageHeartRate: Int
         let maxHeartRate: Int
         let kilojoule: Double
+        var distanceMeter: Double? = nil
+        var zoneDurations: Zones? = nil
     }
     let id: String
     let start: Date
@@ -112,6 +127,8 @@ struct WhoopWorkout: Decodable, Identifiable, Sendable {
     let score: Score?
 
     var kcal: Int? { score.map { Int(($0.kilojoule / 4.184).rounded()) } }
+    var zoneMs: [Int]? { score?.zoneDurations?.milliseconds }
+    var distanceM: Double? { score?.distanceMeter.flatMap { $0 > 0 ? $0 : nil } }
 
     var displayName: String {
         guard let sportName, !sportName.isEmpty else { return "WHOOP activity" }
@@ -176,6 +193,9 @@ enum WhoopMatching {
         var imports: [WhoopWorkout] = []
         /// Imported rows superseded by a Form session that now carries the same WHOOP data.
         var removeImported: [UUID] = []
+        /// Sessions already linked to a WHOOP workout whose data WHOOP has since changed
+        /// (re-scored, trimmed, or saved here before zones and distance were stored).
+        var update: [(workoutID: UUID, whoop: WhoopWorkout)] = []
     }
 
     /// Pure, testable. A WHOOP workout attaches to the Form session it overlaps most
@@ -206,6 +226,13 @@ enum WhoopMatching {
             }
         }
 
+        let byID = Dictionary(scored.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        for session in formWorkouts {
+            if let id = session.whoopWorkoutId, let whoop = byID[id], !session.reflects(whoop) {
+                plan.update.append((session.id, whoop))
+            }
+        }
+
         for workout in scored where !claimed.contains(workout.id) {
             if let uuid = UUID(uuidString: workout.id), importedIDs.contains(uuid) { continue }
             plan.imports.append(workout)
@@ -224,12 +251,41 @@ extension WorkoutRow {
         whoopWorkoutId != nil && whoopWorkoutId?.lowercased() == id.uuidString.lowercased()
     }
 
+    /// True when this row already carries exactly what WHOOP reports for the workout.
+    /// Imported sessions also follow WHOOP's start and end; sessions logged in Form keep their own times.
+    func reflects(_ whoop: WhoopWorkout) -> Bool {
+        guard let score = whoop.score else { return true }
+        let sameNumbers = strain == score.strain && avgHr == score.averageHeartRate && maxHr == score.maxHeartRate
+            && kcal == whoop.kcal && zoneMs == whoop.zoneMs && distanceM == whoop.distanceM
+        guard isWhoopImport else { return sameNumbers }
+        return sameNumbers && startedAt == whoop.start && endedAt == whoop.end
+    }
+
+    /// Takes WHOOP's latest numbers (and, for imports, its times). The name is always ours.
+    mutating func take(_ whoop: WhoopWorkout) {
+        guard let score = whoop.score else { return }
+        whoopWorkoutId = whoop.id
+        strain = score.strain
+        avgHr = score.averageHeartRate
+        maxHr = score.maxHeartRate
+        kcal = whoop.kcal
+        zoneMs = whoop.zoneMs
+        distanceM = whoop.distanceM
+        if isWhoopImport {
+            startedAt = whoop.start
+            endedAt = whoop.end
+        }
+    }
+
     static func imported(from whoop: WhoopWorkout) -> WorkoutRow? {
         guard let id = UUID(uuidString: whoop.id), let score = whoop.score else { return nil }
         return WorkoutRow(
-            id: id, name: whoop.displayName, startedAt: whoop.start, endedAt: whoop.end,
+            id: id,
+            name: SessionNaming.isHyroxSim(sportName: whoop.displayName, start: whoop.start)
+                ? SessionNaming.hyroxSim : whoop.displayName,
+            startedAt: whoop.start, endedAt: whoop.end,
             whoopWorkoutId: whoop.id, strain: score.strain, avgHr: score.averageHeartRate,
-            maxHr: score.maxHeartRate, kcal: whoop.kcal
+            maxHr: score.maxHeartRate, kcal: whoop.kcal, zoneMs: whoop.zoneMs, distanceM: whoop.distanceM
         )
     }
 }

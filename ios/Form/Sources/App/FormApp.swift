@@ -19,6 +19,15 @@ struct FormApp: App {
         #endif
         return PhotoStore()
     }()
+    @State private var metrics: MetricsStore = {
+        #if DEBUG
+        if DemoMode.isOn {
+            return MetricsStore(repository: MockMetricRepository(rows: DemoMode.sampleMetrics()),
+                                directory: FileManager.default.temporaryDirectory.appendingPathComponent("form-demo-metrics"))
+        }
+        #endif
+        return MetricsStore()
+    }()
     @State private var store: WorkoutStore = {
         #if DEBUG
         if DemoMode.isOn { return DemoMode.makeStore() }
@@ -34,6 +43,7 @@ struct FormApp: App {
                 .environment(whoop)
                 .environment(photos)
                 .environment(customExercises)
+                .environment(metrics)
                 .tint(Palette.denim)
                 .task {
                     #if DEBUG
@@ -73,6 +83,7 @@ struct MainTabView: View {
     @Environment(WhoopStore.self) private var whoop
     @Environment(PhotoStore.self) private var photos
     @Environment(CustomExerciseStore.self) private var customExercises
+    @Environment(MetricsStore.self) private var metrics
     @Environment(\.scenePhase) private var scenePhase
     @State private var showingWorkout = false
     @State private var tab: Int = {
@@ -97,10 +108,9 @@ struct MainTabView: View {
             PhotosView()
                 .tag(3)
                 .tabItem { Label("Photos", systemImage: "camera") }
-            ComingSoonView(title: "Journal", systemImage: "book.closed",
-                           message: "Notes, mood and body weight. Coming in the photo build.")
+            GoalsView()
                 .tag(4)
-                .tabItem { Label("Journal", systemImage: "book.closed") }
+                .tabItem { Label("Goals", systemImage: "flag.checkered") }
         }
         .fullScreenCover(item: Binding(
             get: { showingWorkout ? store.active : nil },
@@ -120,8 +130,10 @@ struct MainTabView: View {
             #if DEBUG
             if DemoMode.isOn { return }
             #endif
+            await metrics.refresh()
             await photos.refresh()
             await whoop.refresh(workouts: store)
+            await Nudges.reschedule(history: store.history, photos: photos.photos)
         }
         .onChange(of: scenePhase) { _, phase in
             // WHOOP scores workouts a few minutes after they end; re-sync whenever the app comes back.
@@ -133,7 +145,9 @@ struct MainTabView: View {
                 await customExercises.sync()
                 await store.refresh()
                 await photos.sync()
+                await metrics.refresh()
                 await whoop.refresh(workouts: store)
+                await Nudges.reschedule(history: store.history, photos: photos.photos)
             }
         }
     }

@@ -87,7 +87,7 @@ enum ExerciseMetric: String, Codable, Sendable {
     case duration
 
     static let timedIDs: Set<String> = [
-        "Plank", "Dead_Hang", "L_Sit", "Wall_Sit", "Hollow_Body_Hold", "Side_Plank",
+        "Plank", "Dead_Hang", "L_Sit", "Wall_Sit", "Hollow_Body_Hold", "Side_Plank", "Tuck_L_Sit",
     ]
 }
 
@@ -113,6 +113,22 @@ extension Exercise {
         Exercise(id: "Side_Plank", name: "Side Plank", equipment: "bodyweight",
                  primaryMuscles: ["abdominals"], secondaryMuscles: ["glutes"], mechanic: "isolation",
                  instructions: ["Support yourself on one forearm, body in a straight line.", "Hold, then switch sides."],
+                 images: []),
+        Exercise(id: "Tuck_L_Sit", name: "Tuck L-Sit", equipment: "bodyweight",
+                 primaryMuscles: ["abdominals"], secondaryMuscles: ["triceps"], mechanic: "isolation",
+                 instructions: ["Support yourself on parallettes, dip bars or the floor.", "Pull your knees to your chest, feet off the ground, and hold."],
+                 images: []),
+        Exercise(id: "Pullup_Negative", name: "Pull-up Negative", equipment: "bodyweight",
+                 primaryMuscles: ["lats"], secondaryMuscles: ["biceps", "middle back"], mechanic: "compound",
+                 instructions: ["Jump or step to the top of a pull-up, chin over the bar.", "Lower yourself slowly, 3 to 5 seconds, to a dead hang."],
+                 images: []),
+        Exercise(id: "Pike_Pushup", name: "Pike Push-up", equipment: "bodyweight",
+                 primaryMuscles: ["shoulders"], secondaryMuscles: ["triceps"], mechanic: "compound",
+                 instructions: ["Hips high, body in an upside-down V, hands shoulder-width.", "Lower the top of your head toward the floor, then press back up."],
+                 images: []),
+        Exercise(id: "Explosive_Pullup", name: "Explosive Pull-up", equipment: "bodyweight",
+                 primaryMuscles: ["lats"], secondaryMuscles: ["biceps"], mechanic: "compound",
+                 instructions: ["Pull as fast as you can, aiming the bar at your lower chest.", "Lower under control. Muscle-up groundwork."],
                  images: []),
     ]
 }

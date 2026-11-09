@@ -8,7 +8,8 @@ protocol WorkoutRepository: Sendable {
     func save(_ draft: WorkoutDraft) async throws
     func delete(workoutID: UUID) async throws
     /// Writes WHOOP strain / heart rate / calories onto a logged session.
-    func attachWhoop(_ whoop: WhoopWorkout, to workoutID: UUID) async throws
+    /// Writes WHOOP's numbers onto a session; with `includingTimes`, its start and end as well.
+    func attachWhoop(_ whoop: WhoopWorkout, to workoutID: UUID, includingTimes: Bool) async throws
     /// Upserts WHOOP-only sessions (their id is the WHOOP workout UUID, so this is idempotent).
     func upsertImported(_ rows: [WorkoutRow]) async throws
     /// Rewrites a session's name/notes and replaces its exercises and sets. WHOOP columns are untouched.
@@ -21,14 +22,25 @@ struct WhoopFields: Encodable, Sendable {
     let avg_hr: Int
     let max_hr: Int
     let kcal: Int?
+    let zone_ms: [Int]?
+    let distance_m: Double?
+    /// Only for imported sessions, which follow WHOOP's times.
+    var started_at: Date? = nil
+    var ended_at: Date? = nil
 
-    init?(_ whoop: WhoopWorkout) {
+    init?(_ whoop: WhoopWorkout, includingTimes: Bool = false) {
         guard let score = whoop.score else { return nil }
+        if includingTimes {
+            started_at = whoop.start
+            ended_at = whoop.end
+        }
         whoop_workout_id = whoop.id
         strain = score.strain
         avg_hr = score.averageHeartRate
         max_hr = score.maxHeartRate
         kcal = whoop.kcal
+        zone_ms = whoop.zoneMs
+        distance_m = whoop.distanceM
     }
 }
 
@@ -58,8 +70,8 @@ struct SupabaseWorkoutRepository: WorkoutRepository {
         try await supabase.from("workouts").delete().eq("id", value: workoutID).execute()
     }
 
-    func attachWhoop(_ whoop: WhoopWorkout, to workoutID: UUID) async throws {
-        guard let fields = WhoopFields(whoop) else { return }
+    func attachWhoop(_ whoop: WhoopWorkout, to workoutID: UUID, includingTimes: Bool) async throws {
+        guard let fields = WhoopFields(whoop, includingTimes: includingTimes) else { return }
         try await supabase.from("workouts").update(fields).eq("id", value: workoutID).execute()
     }
 
@@ -124,13 +136,9 @@ final class MockWorkoutRepository: WorkoutRepository, @unchecked Sendable {
         workouts.removeAll { $0.id == workoutID }
     }
 
-    func attachWhoop(_ whoop: WhoopWorkout, to workoutID: UUID) async throws {
-        guard let index = workouts.firstIndex(where: { $0.id == workoutID }), let score = whoop.score else { return }
-        workouts[index].whoopWorkoutId = whoop.id
-        workouts[index].strain = score.strain
-        workouts[index].avgHr = score.averageHeartRate
-        workouts[index].maxHr = score.maxHeartRate
-        workouts[index].kcal = whoop.kcal
+    func attachWhoop(_ whoop: WhoopWorkout, to workoutID: UUID, includingTimes: Bool) async throws {
+        guard let index = workouts.firstIndex(where: { $0.id == workoutID }) else { return }
+        workouts[index].take(whoop)
     }
 
     func upsertImported(_ rows: [WorkoutRow]) async throws {

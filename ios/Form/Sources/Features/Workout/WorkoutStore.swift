@@ -43,6 +43,24 @@ final class WorkoutStore {
         active = makeActive(draft)
     }
 
+    /// Starts a session from a program template, each exercise loaded with its double-progression target.
+    func startWorkout(template: Program.Template, now: Date = .now) {
+        guard active == nil else { return }
+        startWorkout(now: now)
+        guard let active else { return }
+        active.rename(template.name)
+        for slot in template.slots {
+            guard let exercise = library.exercise(slot.ref) else { continue }
+            let last = Records.lastSets(for: slot.ref, in: history)
+            let target = Program.target(for: slot, metric: exercise.metric, kind: exercise.kind, last: last)
+            var note = slot.seconds.map { "Target \(slot.sets) × \($0) s" }
+                ?? "Target \(slot.sets) × \(slot.repMin == slot.repMax ? "\(slot.repMax)" : "\(slot.repMin)–\(slot.repMax)")"
+            if let extra = slot.note { note += " · \(extra)" }
+            if let reason = target.reason { note += " · \(reason)" }
+            active.addPlanned(exercise, sets: slot.sets, target: target, note: note)
+        }
+    }
+
     func discardActive() {
         store.clearActive()
         active = nil
@@ -86,6 +104,7 @@ final class WorkoutStore {
             history = (remote.filter { !pendingIDs.contains($0.id) } + store.pending().map(Self.localRow))
                 .sorted { $0.startedAt > $1.startedAt }
             errorMessage = nil
+            await nameImportedSessions()
         } catch {
             errorMessage = "Couldn't reach the server. Your workouts are saved on this phone."
         }
@@ -126,6 +145,8 @@ final class WorkoutStore {
         row.avgHr = original.avgHr
         row.maxHr = original.maxHr
         row.kcal = original.kcal
+        row.zoneMs = original.zoneMs
+        row.distanceM = original.distanceM
         if let index = history.firstIndex(where: { $0.id == draft.id }) { history[index] = row }
         do {
             try await repository.replace(draft)
@@ -136,19 +157,34 @@ final class WorkoutStore {
 
     // MARK: WHOOP
 
+    /// Renames WHOOP imports that are really something specific: Saturday-morning "Functional Fitness"
+    /// is the team HYROX sim. Runs once per session, since renamed rows no longer match.
+    func nameImportedSessions() async {
+        let rename = history.filter {
+            $0.isWhoopImport && $0.sortedExercises.isEmpty
+                && SessionNaming.isHyroxSim(sportName: $0.name, start: $0.startedAt)
+        }
+        for row in rename {
+            var draft = WorkoutDraft(id: row.id, name: SessionNaming.hyroxSim, startedAt: row.startedAt, endedAt: row.endedAt)
+            draft.notes = row.notes
+            await update(draft, keeping: row)
+        }
+    }
+
     /// Applies a WHOOP sync plan. Returns a description of the first failure, if any.
     @discardableResult
     func apply(_ plan: WhoopMatching.Plan) async -> String? {
         var failure: String?
-        for (workoutID, whoop) in plan.attach {
-            do { try await repository.attachWhoop(whoop, to: workoutID) } catch { failure = failure ?? error.localizedDescription }
-            if let index = history.firstIndex(where: { $0.id == workoutID }), let score = whoop.score {
-                history[index].whoopWorkoutId = whoop.id
-                history[index].strain = score.strain
-                history[index].avgHr = score.averageHeartRate
-                history[index].maxHr = score.maxHeartRate
-                history[index].kcal = whoop.kcal
+        for (workoutID, whoop) in plan.attach + plan.update {
+            guard let index = history.firstIndex(where: { $0.id == workoutID }) else { continue }
+            let isImport = history[index].isWhoopImport
+            do { try await repository.attachWhoop(whoop, to: workoutID, includingTimes: isImport) } catch {
+                failure = failure ?? error.localizedDescription
             }
+            history[index].take(whoop)
+        }
+        if !plan.update.isEmpty {
+            history.sort { $0.startedAt > $1.startedAt }
         }
         for id in plan.removeImported {
             try? await repository.delete(workoutID: id)

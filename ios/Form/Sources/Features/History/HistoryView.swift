@@ -6,10 +6,24 @@ struct HistoryView: View {
     @State private var expanded: Set<UUID> = []
     @State private var editing: WorkoutRow?
     @State private var deleting: WorkoutRow?
+    @State private var importingBoards = false
+    @State private var selecting = false
+    @State private var selection: Set<UUID> = []
+    @State private var sharing: IdentifiedCard?
+    @State private var weighing: WorkoutRow?
+    @State private var splitting: WorkoutRow?
+    @State private var running: WorkoutRow?
+    @State private var viewingBoard: WorkoutRow?
+    @AppStorage("history.showWalks") private var showWalks = false
+
+    /// WHOOP logs every walk; they bury the training sessions, so they're hidden unless asked for.
+    private var visible: [WorkoutRow] {
+        showWalks ? store.history : store.history.filter { !HistoryFilter.isWalk($0) }
+    }
 
     private var weeks: [(title: String, workouts: [WorkoutRow])] {
         let calendar = Calendar.current
-        let grouped = Dictionary(grouping: store.history) {
+        let grouped = Dictionary(grouping: visible) {
             calendar.dateInterval(of: .weekOfYear, for: $0.startedAt)?.start ?? $0.startedAt
         }
         return grouped.keys.sorted(by: >).map { start in
@@ -57,6 +71,19 @@ struct HistoryView: View {
                                     Button(workout.isWhoopImport ? "Define session" : "Edit session", systemImage: "pencil") {
                                         editing = workout
                                     }
+                                    Button("Share card", systemImage: "square.and.arrow.up") { share([workout]) }
+                                    if workout.sortedExercises.contains(where: { store.library.metric($0.exerciseRef) == .weightReps }) {
+                                        Button("Fill in weights", systemImage: "scalemass") { weighing = workout }
+                                    }
+                                    if workout.name.localizedCaseInsensitiveContains("hyrox") {
+                                        Button("HYROX splits", systemImage: "stopwatch") { splitting = workout }
+                                    }
+                                    if workout.name.localizedCaseInsensitiveContains("run") {
+                                        Button("Run details", systemImage: "figure.run") { running = workout }
+                                    }
+                                    if BoardPhotos.exists(for: workout.id) {
+                                        Button("Board photo", systemImage: "photo") { viewingBoard = workout }
+                                    }
                                 }
                         }
                     } header: {
@@ -85,16 +112,58 @@ struct HistoryView: View {
                      : "Its exercises and sets are removed for good.")
             }
             .toolbar {
-                if whoop.isConnected {
-                    Menu {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(selecting ? "Cancel" : "Share") {
+                        selecting.toggle()
+                        selection = []
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button("Import board photos", systemImage: "photo.stack") { importingBoards = true }
+                    Toggle(isOn: $showWalks) { Label("Show walks", systemImage: "figure.walk") }
+                    if whoop.isConnected {
                         Button("Import all WHOOP history", systemImage: "arrow.down.circle") {
                             Task { await whoop.importHistory(workouts: store) }
                         }
                         .disabled(whoop.isImportingHistory)
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
                     }
-                    .accessibilityLabel("History options")
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .accessibilityLabel("History options")
+                }
+            }
+            .sheet(isPresented: $importingBoards) { BoardImportView() }
+            .sheet(item: $sharing) { ShareCardSheet(model: $0.model) }
+            .sheet(item: $weighing) { QuickWeightsView(workout: $0) }
+            .sheet(item: $splitting) { HyroxSplitsView(session: $0) }
+            .sheet(item: $running) { RunLogSheet(workout: $0) }
+            .sheet(item: $viewingBoard) { workout in
+                NavigationStack {
+                    ScrollView {
+                        if let image = BoardPhotos.image(for: workout.id) {
+                            Image(uiImage: image).resizable().scaledToFit()
+                        }
+                    }
+                    .background(Palette.midnight)
+                    .navigationTitle(workout.name)
+                    .navigationBarTitleDisplayMode(.inline)
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if selecting {
+                    Button {
+                        share(store.history.filter { selection.contains($0.id) })
+                    } label: {
+                        Label(selection.isEmpty ? "Pick up to \(ShareCards.maxSessions) sessions"
+                              : "Share \(selection.count) of \(ShareCards.maxSessions) on one card",
+                              systemImage: "square.and.arrow.up")
+                    }
+                    .buttonStyle(PrimaryKeyStyle(height: 56))
+                    .disabled(selection.isEmpty)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
                 }
             }
             .refreshable {
@@ -104,15 +173,44 @@ struct HistoryView: View {
         }
     }
 
+    private func share(_ workouts: [WorkoutRow]) {
+        guard !workouts.isEmpty else { return }
+        let name: ShareCards.NameLookup = { store.library.exercise($0)?.name ?? $0 }
+        let day = ProgressSnapshot.dayNumber(workouts.map(\.startedAt).max() ?? .now)
+        if workouts.count == 1, let workout = workouts.first {
+            let prs = Set(Momentum.prEvents(history: store.history).filter { $0.date == workout.startedAt }.map(\.ref))
+            sharing = IdentifiedCard(model: ShareCards.session(workout, prRefs: prs, dayNumber: day, name: name))
+        } else {
+            sharing = IdentifiedCard(model: ShareCards.recap(workouts, dayNumber: day, name: name))
+        }
+        selecting = false
+        selection = []
+    }
+
     private func row(_ workout: WorkoutRow) -> some View {
         let isOpen = expanded.contains(workout.id)
         return VStack(alignment: .leading, spacing: 8) {
             Button {
+                if selecting {
+                    if selection.contains(workout.id) {
+                        selection.remove(workout.id)
+                    } else if selection.count < ShareCards.maxSessions {
+                        selection.insert(workout.id)
+                    }
+                    return
+                }
                 withAnimation(.snappy) {
                     if isOpen { expanded.remove(workout.id) } else { expanded.insert(workout.id) }
                 }
             } label: {
                 HStack(alignment: .firstTextBaseline) {
+                    if selecting {
+                        let full = selection.count >= ShareCards.maxSessions && !selection.contains(workout.id)
+                        Image(systemName: selection.contains(workout.id) ? "checkmark.circle.fill" : "circle")
+                            .font(.title3)
+                            .foregroundStyle(selection.contains(workout.id) ? Palette.orange : Palette.rule)
+                            .opacity(full ? 0.4 : 1)
+                    }
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
                             Text(workout.name).font(.headline).foregroundStyle(Palette.ink)
@@ -143,6 +241,34 @@ struct HistoryView: View {
 
             if isOpen, workout.strain != nil {
                 HeartRateStrip(workout: workout)
+            }
+            if isOpen, let zones = workout.zoneMs, zones.reduce(0, +) > 0 {
+                ZoneBar(zones: zones, height: 6, labelSize: 10, labelColor: Palette.slateText)
+                    .padding(.vertical, 4)
+            }
+            if isOpen, !selecting {
+                Button { share([workout]) } label: {
+                    Label("Story card", systemImage: "square.and.arrow.up").font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.borderless)
+                .tint(Palette.orange)
+            }
+            if isOpen, BoardPhotos.exists(for: workout.id) {
+                Button { viewingBoard = workout } label: {
+                    Label("Board photo", systemImage: "photo").font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.borderless)
+                .tint(Palette.denim)
+            }
+            if isOpen, workout.sortedExercises.contains(where: { exercise in
+                store.library.metric(exercise.exerciseRef) == .weightReps
+                    && exercise.sortedSets.allSatisfy { ($0.weightKg ?? 0) == 0 }
+            }) {
+                Button { weighing = workout } label: {
+                    Label("Fill in weights · 30 seconds", systemImage: "scalemass").font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.borderless)
+                .tint(Palette.orange)
             }
             if isOpen, workout.isWhoopImport, workout.sortedExercises.isEmpty {
                 Button {
