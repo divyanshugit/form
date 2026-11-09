@@ -175,17 +175,16 @@ final class WorkoutStore {
     @discardableResult
     func apply(_ plan: WhoopMatching.Plan) async -> String? {
         var failure: String?
-        for (workoutID, whoop) in plan.attach + plan.enrich {
-            do { try await repository.attachWhoop(whoop, to: workoutID) } catch { failure = failure ?? error.localizedDescription }
-            if let index = history.firstIndex(where: { $0.id == workoutID }), let score = whoop.score {
-                history[index].whoopWorkoutId = whoop.id
-                history[index].strain = score.strain
-                history[index].avgHr = score.averageHeartRate
-                history[index].maxHr = score.maxHeartRate
-                history[index].kcal = whoop.kcal
-                history[index].zoneMs = whoop.zoneMs
-                history[index].distanceM = whoop.distanceM
+        for (workoutID, whoop) in plan.attach + plan.update {
+            guard let index = history.firstIndex(where: { $0.id == workoutID }) else { continue }
+            let isImport = history[index].isWhoopImport
+            do { try await repository.attachWhoop(whoop, to: workoutID, includingTimes: isImport) } catch {
+                failure = failure ?? error.localizedDescription
             }
+            history[index].take(whoop)
+        }
+        if !plan.update.isEmpty {
+            history.sort { $0.startedAt > $1.startedAt }
         }
         for id in plan.removeImported {
             try? await repository.delete(workoutID: id)

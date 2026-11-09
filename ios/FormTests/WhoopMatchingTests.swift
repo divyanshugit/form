@@ -71,6 +71,43 @@ final class WhoopMatchingTests: XCTestCase {
         XCTAssertTrue(plan.imports.isEmpty)
     }
 
+    func testWhoopEditsFlowIntoKnownSessions() {
+        // An imported activity, then WHOOP re-scores it and trims its start.
+        let original = whoop(start: 0, minutes: 60, strain: 12)
+        var imported = WorkoutRow.imported(from: original)!
+        imported.name = "HYROX sim (team)" // renamed by a board import; must survive
+        let edited = WhoopWorkout(id: original.id, start: original.start + 300, end: original.end, sportName: original.sportName,
+                                  scoreState: .scored, score: .init(strain: 14.2, averageHeartRate: 141, maxHeartRate: 186, kilojoule: 1900))
+        let plan = WhoopMatching.plan(formWorkouts: [imported], whoop: [edited])
+        XCTAssertEqual(plan.update.map(\.workoutID), [imported.id])
+        XCTAssertTrue(plan.imports.isEmpty, "a known activity is updated, never imported twice")
+
+        imported.take(edited)
+        XCTAssertEqual(imported.name, "HYROX sim (team)")
+        XCTAssertEqual(imported.strain, 14.2)
+        XCTAssertEqual(imported.maxHr, 186)
+        XCTAssertEqual(imported.startedAt, original.start + 300, "imports follow WHOOP's times")
+        XCTAssertTrue(imported.reflects(edited))
+
+        // Unchanged data plans nothing.
+        XCTAssertTrue(WhoopMatching.plan(formWorkouts: [imported], whoop: [edited]).update.isEmpty)
+    }
+
+    func testLoggedSessionsKeepTheirOwnTimes() {
+        let form = session(start: 0, minutes: 60)
+        let attached = whoop(start: 300, minutes: 55)
+        var logged = form
+        logged.take(attached)
+        XCTAssertEqual(logged.startedAt, form.startedAt, "times logged in Form are ours")
+        XCTAssertEqual(logged.avgHr, 130)
+
+        let rescored = WhoopWorkout(id: attached.id, start: attached.start, end: attached.end, sportName: attached.sportName,
+                                    scoreState: .scored, score: .init(strain: 15, averageHeartRate: 135, maxHeartRate: 175, kilojoule: 1800))
+        let plan = WhoopMatching.plan(formWorkouts: [logged], whoop: [rescored])
+        XCTAssertEqual(plan.update.count, 1)
+        XCTAssertTrue(plan.attach.isEmpty)
+    }
+
     func testDecodesWhoopPayload() throws {
         let json = """
         {"records":[{"id":"ecfc6a15-4661-442f-a9a4-f160dd7afae8","v1_id":1043,"user_id":9012,

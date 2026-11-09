@@ -193,8 +193,9 @@ enum WhoopMatching {
         var imports: [WhoopWorkout] = []
         /// Imported rows superseded by a Form session that now carries the same WHOOP data.
         var removeImported: [UUID] = []
-        /// Sessions already linked to a WHOOP workout but saved before zones and distance were stored.
-        var enrich: [(workoutID: UUID, whoop: WhoopWorkout)] = []
+        /// Sessions already linked to a WHOOP workout whose data WHOOP has since changed
+        /// (re-scored, trimmed, or saved here before zones and distance were stored).
+        var update: [(workoutID: UUID, whoop: WhoopWorkout)] = []
     }
 
     /// Pure, testable. A WHOOP workout attaches to the Form session it overlaps most
@@ -225,10 +226,10 @@ enum WhoopMatching {
             }
         }
 
-        let byID = Dictionary(scored.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        for session in formWorkouts where session.zoneMs == nil {
-            if let id = session.whoopWorkoutId, let whoop = byID[id], whoop.zoneMs != nil {
-                plan.enrich.append((session.id, whoop))
+        let byID = Dictionary(scored.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        for session in formWorkouts {
+            if let id = session.whoopWorkoutId, let whoop = byID[id], !session.reflects(whoop) {
+                plan.update.append((session.id, whoop))
             }
         }
 
@@ -248,6 +249,32 @@ extension WorkoutRow {
     /// Imported WHOOP-only sessions reuse the WHOOP workout UUID as their id and have no exercises.
     var isWhoopImport: Bool {
         whoopWorkoutId != nil && whoopWorkoutId?.lowercased() == id.uuidString.lowercased()
+    }
+
+    /// True when this row already carries exactly what WHOOP reports for the workout.
+    /// Imported sessions also follow WHOOP's start and end; sessions logged in Form keep their own times.
+    func reflects(_ whoop: WhoopWorkout) -> Bool {
+        guard let score = whoop.score else { return true }
+        let sameNumbers = strain == score.strain && avgHr == score.averageHeartRate && maxHr == score.maxHeartRate
+            && kcal == whoop.kcal && zoneMs == whoop.zoneMs && distanceM == whoop.distanceM
+        guard isWhoopImport else { return sameNumbers }
+        return sameNumbers && startedAt == whoop.start && endedAt == whoop.end
+    }
+
+    /// Takes WHOOP's latest numbers (and, for imports, its times). The name is always ours.
+    mutating func take(_ whoop: WhoopWorkout) {
+        guard let score = whoop.score else { return }
+        whoopWorkoutId = whoop.id
+        strain = score.strain
+        avgHr = score.averageHeartRate
+        maxHr = score.maxHeartRate
+        kcal = whoop.kcal
+        zoneMs = whoop.zoneMs
+        distanceM = whoop.distanceM
+        if isWhoopImport {
+            startedAt = whoop.start
+            endedAt = whoop.end
+        }
     }
 
     static func imported(from whoop: WhoopWorkout) -> WorkoutRow? {

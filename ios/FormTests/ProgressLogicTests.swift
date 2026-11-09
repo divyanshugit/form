@@ -62,9 +62,9 @@ final class ProgressLogicTests: XCTestCase {
         old.zoneMs = nil
         old.distanceM = nil
         let plan = WhoopMatching.plan(formWorkouts: [old], whoop: [whoop])
-        XCTAssertEqual(plan.enrich.map(\.workoutID), [old.id])
+        XCTAssertEqual(plan.update.map(\.workoutID), [old.id])
         XCTAssertTrue(plan.imports.isEmpty)
-        XCTAssertTrue(WhoopMatching.plan(formWorkouts: [imported], whoop: [whoop]).enrich.isEmpty)
+        XCTAssertTrue(WhoopMatching.plan(formWorkouts: [imported], whoop: [whoop]).update.isEmpty)
     }
 
     // MARK: Milestones
